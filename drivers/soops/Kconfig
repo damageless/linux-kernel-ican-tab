@@ -1,0 +1,23 @@
+#
+# Kconfig of soops char device driver.
+#
+# InfoTM all rights reserved.
+#
+# Sololz <sololz.luo@gmail.com>.
+#
+
+menuconfig SOOPS
+	bool "Complicated operations char device driver created by Sololz"
+	default n
+	---help---
+	First I design this driver to implement Capslock key communication with
+	application.
+
+if SOOPS
+
+config SOOPS_DEBUG
+	bool "Debug message print for soops"
+	depends on SOOPS
+	default n
+
+endif	# SOOPS

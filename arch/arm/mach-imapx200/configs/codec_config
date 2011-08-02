@@ -1,0 +1,130 @@
+# codecs
+
+menuconfig IG_DEVICE_CODEC
+	bool "enable codec module"
+	default y
+
+# select settings
+
+if IG_DEVICE_CODEC
+	
+# lm4550, first imported by infotm, james(old god)
+# driver not pressented, invisiable temporary
+config CODEC_LM4550
+	bool
+	select SND_IMAPX200_SOC_AC97
+	select SND_SOC_LM4550 
+config CODEC_LM4550_POWER
+	string "lm4550 power"
+	depends on CODEC_LM4550
+config CODEC_LM4550_I2C
+	int "lm4550 i2c channel(0 or 1)"
+	depends on CODEC_LM4550
+	default 0
+config CODEC_LM4550_SPKVOL
+#	int "lm4550 speaker volume"
+	int 
+	depends on CODEC_LM4550
+	default 10
+config CODEC_LM4550_RECVOL
+#	int "lm4550 record volume"
+	int 
+	depends on CODEC_LM4550
+	default 10
+
+# wm8987, first imported by infotm, james(old god)
+config CODEC_WM8987
+	bool "wm8987"
+	select SND_IMAPX200_SOC_I2S
+	select SND_SOC_WM8987 
+config CODEC_WM8987_POWER
+	string "wm8987 power"
+	depends on CODEC_WM8987
+config CODEC_WM8987_I2C
+	int "wm8987 i2c channel(0 or 1)"
+	depends on CODEC_WM8987
+	default 0
+config CODEC_WM8987_SPKVOL
+#	int "wm8987 speaker volume"
+	int 
+	depends on CODEC_WM8987
+	default 10
+config CODEC_WM8987_RECVOL
+#	int "wm8987 record volume"
+	int 
+	depends on CODEC_WM8987
+	default 10
+
+# es8328, first imported by infotm, james(old god)
+config CODEC_ES8328
+	bool "es8328"
+	select SND_IMAPX200_SOC_I2S
+	select SND_SOC_ES8328 
+config CODEC_ES8328_POWER
+	string "es8328 power"
+	depends on CODEC_ES8328
+config CODEC_ES8328_CE
+	int "slave address, low: 0x10, high: 0x11"
+	depends on CODEC_ES8328
+	default 0
+config CODEC_ES8328_I2C
+	int "es8328 i2c channel(0 or 1)"
+	depends on CODEC_ES8328
+	default 0
+config CODEC_ES8328_SPKVOL
+#	int "es8328 speaker volume"
+	int 
+	depends on CODEC_ES8328
+	default 10
+config CODEC_ES8328_RECVOL
+#	int "es8328 record volume"
+	int 
+	depends on CODEC_ES8328
+	default 10
+config CODEC_ES8328_ALT
+	bool "use an alternate es8328 driver"
+	default n
+	help
+	  choose an alternate driver is you are looking for a better quality.
+	  the es8328 drivers is under folder sound/soc/codecs/es8328/ . Input
+	  path from es8328(eg: es8328/wwe10b.c) here to compile the selected
+	  driver.
+config CODEC_ES8328_ALT_SRC
+	string "driver path"
+	depends on CODEC_ES8328_ALT
+	default "es8328/wwe10b.c"
+	help
+	  choose an alternate driver is you are looking for a better quality.
+	  the es8328 drivers is under folder sound/soc/codecs/es8328/ . Input
+	  path from es8328(eg: es8328/wwe10b.c) here to compile the selected
+	  driver.
+
+# alc5621, first imported by infotm, jay, gelei
+config CODEC_ALC5621
+	bool "alc5621"
+	select SND_IMAPX200_SOC_I2S
+	select SND_SOC_ALC5621 
+config CODEC_ALC5621_POWER
+	string "alc5621 power"
+	depends on CODEC_ALC5621
+config CODEC_ALC5621_I2C
+	int "alc5621 i2c channel(0 or 1)"
+	depends on CODEC_ALC5621
+	default 0
+config CODEC_ALC5621_SPKVOL
+#	int "alc5621 speaker volume"
+	int 
+	depends on CODEC_ALC5621
+	default 10
+config CODEC_ALC5621_RECVOL
+#	int "alc5621 record volume"
+	int 
+	depends on CODEC_ALC5621
+	default 10
+
+
+endif
+
+# According to camera sensors might have different gpio connections,
+# camera driver developer should make config control here.
+

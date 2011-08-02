@@ -1,0 +1,2316 @@
+/*
+ * gpio_base.c
+ *
+ * Copyright (c) 2009~2014 ShangHai Infotm Ltd all rights reserved.
+ *
+ * Use of Infotm's code is governed by terms and conditions
+ * stated in the accompanying licensing statement.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Main file of IMAPX platform GPIO base layer. This layer just provides
+ * basic operations of GPIO.
+ *
+ * Author:
+ *	Sololz<sololz.luo@gmail.com>.
+ *
+ * Revision History:
+ * 1.0  04/11/2011 Sololz.
+ * 	Create this file.
+ */
+
+#include "gpio_base_private.h"
+
+/* ############################################################################## */
+
+/* 
+ * All these gpio feature specs, I just use a 32bit variable to store
+ * the features. Each bit of the variable stands for a point of a gpio.
+ * [0] - Input able, 00.
+ * [1] - Output able, 01.
+ * [2] - Control0 able, 10.
+ * [3] - Control1 able, 11.
+ * [4] - Oposite or not, proffesional speak is open drain@@.
+ * [5] - Pull up able, actually, no use.
+ * [6] - Pull down able, actually, no use.
+ * [7] - 
+ * [8] - 
+ * [9] - 
+ * [10] - 
+ * [11] - 
+ * [12] - 
+ * [13] - 
+ * [14] - 
+ * [15] - 
+ * [16] - 
+ * [17] - 
+ * [18] - 
+ * [19] - 
+ * [20] - 
+ * [21] - 
+ * [22] - 
+ * [27:23] - Number of external interrupt group, 5bits is used, from 0 to max 31.
+ * The group number is not supposed to surpase 31 because of hardware limitation.
+ * So 5bits is just OK.
+ * [31:28] - Mark for external interrupt, 4 bits is used. there are 6 external
+ * interrupt groups, so, 4 bits is enough to index them. Actually 3 bits is enough,
+ * but for future expand, 4 is better.
+ */
+static const struct ig_base_gpio_spec 
+ig_base_a_spec[IG_BASE_GET_COUNT(IG_BASE_A)] = {	/* GPA */
+	[0] = {
+		.feature = IG_BASE_FEATURE_COMMON | 
+			IG_BASE_FEATURE_EINTG1 | 
+			IG_BASE_GPIO_SET_EINTG_NUM(0) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [1] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG1 | 
+			IG_BASE_GPIO_SET_EINTG_NUM(1) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [2] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG1 | 
+			IG_BASE_GPIO_SET_EINTG_NUM(2) |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [3] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG1 | 
+			IG_BASE_GPIO_SET_EINTG_NUM(3) |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [4] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG1 | 
+			IG_BASE_GPIO_SET_EINTG_NUM(4) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [5] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG1 | 
+			IG_BASE_GPIO_SET_EINTG_NUM(5) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [6] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG1 |
+			IG_BASE_GPIO_SET_EINTG_NUM(6) |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [7] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG1 |
+			IG_BASE_GPIO_SET_EINTG_NUM(7) |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	},
+};
+static const struct ig_base_gpio_spec 
+ig_base_b_spec[IG_BASE_GET_COUNT(IG_BASE_B)] = {	/* GPB */
+	[0] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG2 |
+			IG_BASE_GPIO_SET_EINTG_NUM(0) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [1] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG2 |
+			IG_BASE_GPIO_SET_EINTG_NUM(1) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [2] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG2 |
+			IG_BASE_GPIO_SET_EINTG_NUM(2) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [3] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG2 |
+			IG_BASE_GPIO_SET_EINTG_NUM(3) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [4] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG2 |
+			IG_BASE_GPIO_SET_EINTG_NUM(4) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1,
+	},
+};
+static const struct ig_base_gpio_spec 
+ig_base_c_spec[IG_BASE_GET_COUNT(IG_BASE_C)] = {	/* GPC */
+	[0] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG3 |
+			IG_BASE_GPIO_SET_EINTG_NUM(0) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_OPOSITE |
+			IG_BASE_FEATURE_CTRL0,
+	}, [1] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG3 |
+			IG_BASE_GPIO_SET_EINTG_NUM(1) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_OPOSITE |
+			IG_BASE_FEATURE_CTRL0,
+	}, [2] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG3 |
+			IG_BASE_GPIO_SET_EINTG_NUM(2) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_OPOSITE |
+			IG_BASE_FEATURE_CTRL0,
+	}, [3] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG3 |
+			IG_BASE_GPIO_SET_EINTG_NUM(3) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_OPOSITE |
+			IG_BASE_FEATURE_CTRL0,
+	}, [4] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG3 |
+			IG_BASE_GPIO_SET_EINTG_NUM(4) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_OPOSITE |
+			IG_BASE_FEATURE_CTRL0,
+	}, [5] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG3 |
+			IG_BASE_GPIO_SET_EINTG_NUM(5) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_OPOSITE |
+			IG_BASE_FEATURE_CTRL0,
+	}, [6] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG3 |
+			IG_BASE_GPIO_SET_EINTG_NUM(6) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_OPOSITE |
+			IG_BASE_FEATURE_CTRL0,
+	}, [7] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG3 |
+			IG_BASE_GPIO_SET_EINTG_NUM(7) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_OPOSITE |
+			IG_BASE_FEATURE_CTRL0,
+	},
+};
+static const struct ig_base_gpio_spec 
+ig_base_d_spec[IG_BASE_GET_COUNT(IG_BASE_D)] = {	/* GPD */
+	[0] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [1] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [2] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [3] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [4] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	},
+};
+/* Actually all GPE pins can't be pull up/down. */
+static const struct ig_base_gpio_spec 
+ig_base_e_spec[IG_BASE_GET_COUNT(IG_BASE_E)] = {	/* GPE */
+	[0] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG4 |
+			IG_BASE_GPIO_SET_EINTG_NUM(0) |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [1] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG4 |
+			IG_BASE_GPIO_SET_EINTG_NUM(1) |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [2] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG4 |
+			IG_BASE_GPIO_SET_EINTG_NUM(2) |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [3] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG4 |
+			IG_BASE_GPIO_SET_EINTG_NUM(3) |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [4] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG4 |
+			IG_BASE_GPIO_SET_EINTG_NUM(4) |
+			IG_BASE_FEATURE_CTRL0,
+	}, [5] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG4 |
+			IG_BASE_GPIO_SET_EINTG_NUM(5) |
+			IG_BASE_FEATURE_CTRL0,
+	}, [6] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG4 |
+			IG_BASE_GPIO_SET_EINTG_NUM(6) |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [7] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG4 |
+			IG_BASE_GPIO_SET_EINTG_NUM(7) |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [8] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG4 |
+			IG_BASE_GPIO_SET_EINTG_NUM(8) |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [9] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG4 |
+			IG_BASE_GPIO_SET_EINTG_NUM(9) |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [10] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG4 |
+			IG_BASE_GPIO_SET_EINTG_NUM(10) |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [11] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG4 |
+			IG_BASE_GPIO_SET_EINTG_NUM(11) |
+			IG_BASE_FEATURE_CTRL0,
+	}, [12] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG4 |
+			IG_BASE_GPIO_SET_EINTG_NUM(12) |
+			IG_BASE_FEATURE_CTRL0,
+	}, [13] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG4 |
+			IG_BASE_GPIO_SET_EINTG_NUM(13) |
+			IG_BASE_FEATURE_CTRL0,
+	}, [14] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG4 |
+			IG_BASE_GPIO_SET_EINTG_NUM(14) |
+			IG_BASE_FEATURE_CTRL0,
+	}, [15] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG4 |
+			IG_BASE_GPIO_SET_EINTG_NUM(15) |
+			IG_BASE_FEATURE_CTRL0,
+	},
+};
+static const struct ig_base_gpio_spec 
+ig_base_f_spec[IG_BASE_GET_COUNT(IG_BASE_F)] = {	/* GPF */
+	[0] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	}, [1] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	}, [2] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG4 |
+			IG_BASE_GPIO_SET_EINTG_NUM(16) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	}, [3] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG4 |
+			IG_BASE_GPIO_SET_EINTG_NUM(17) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	}, [4] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG4 |
+			IG_BASE_GPIO_SET_EINTG_NUM(18) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	}, [5] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG4 |
+			IG_BASE_GPIO_SET_EINTG_NUM(19) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	}, [6] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG4 |
+			IG_BASE_GPIO_SET_EINTG_NUM(20) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [7] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG4 |
+			IG_BASE_GPIO_SET_EINTG_NUM(21) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [8] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG4 |
+			IG_BASE_GPIO_SET_EINTG_NUM(22) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [9] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG4 |
+			IG_BASE_GPIO_SET_EINTG_NUM(23) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	},
+};
+static const struct ig_base_gpio_spec 
+ig_base_g_spec[IG_BASE_GET_COUNT(IG_BASE_G)] = {	/* GPG */
+	[0] = {
+		.feature = IG_BASE_FEATURE_INPUT,
+	}, [1] = {
+		.feature = IG_BASE_FEATURE_INPUT,
+	}, [2] = {
+		.feature = IG_BASE_FEATURE_INPUT,
+	}, [3] = {
+		.feature = IG_BASE_FEATURE_INPUT,
+	}, [4] = {
+		.feature = IG_BASE_FEATURE_INPUT,
+	}, [5] = {
+		.feature = IG_BASE_FEATURE_INPUT,
+	},
+};
+static const struct ig_base_gpio_spec 
+ig_base_h_spec[IG_BASE_GET_COUNT(IG_BASE_H)] = {	/* GPH */
+	[0] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG6 |
+			IG_BASE_GPIO_SET_EINTG_NUM(0) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [1] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG6 |
+			IG_BASE_GPIO_SET_EINTG_NUM(1) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [2] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG6 |
+			IG_BASE_GPIO_SET_EINTG_NUM(2) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [3] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG6 |
+			IG_BASE_GPIO_SET_EINTG_NUM(3) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	},
+};
+static const struct ig_base_gpio_spec 
+ig_base_i_spec[IG_BASE_GET_COUNT(IG_BASE_I)] = {	/* GPI */
+	[0] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG6 |
+			IG_BASE_GPIO_SET_EINTG_NUM(4) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [1] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG6 |
+			IG_BASE_GPIO_SET_EINTG_NUM(5) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [2] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG6 |
+			IG_BASE_GPIO_SET_EINTG_NUM(6) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [3] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG6 |
+			IG_BASE_GPIO_SET_EINTG_NUM(7) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [4] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG6 |
+			IG_BASE_GPIO_SET_EINTG_NUM(8) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [5] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG6 |
+			IG_BASE_GPIO_SET_EINTG_NUM(9) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [6] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG6 |
+			IG_BASE_GPIO_SET_EINTG_NUM(10) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [7] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG6 |
+			IG_BASE_GPIO_SET_EINTG_NUM(11) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [8] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG6 |
+			IG_BASE_GPIO_SET_EINTG_NUM(12) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [9] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG6 |
+			IG_BASE_GPIO_SET_EINTG_NUM(13) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [10] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG6 |
+			IG_BASE_GPIO_SET_EINTG_NUM(14) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [11] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG6 |
+			IG_BASE_GPIO_SET_EINTG_NUM(15) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [12] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG6 |
+			IG_BASE_GPIO_SET_EINTG_NUM(16) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [13] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG6 |
+			IG_BASE_GPIO_SET_EINTG_NUM(17) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	},
+};
+static const struct ig_base_gpio_spec 
+ig_base_j_spec[IG_BASE_GET_COUNT(IG_BASE_J)] = {	/* GPJ */
+	[0] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG6 |
+			IG_BASE_GPIO_SET_EINTG_NUM(18) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [1] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG6 |
+			IG_BASE_GPIO_SET_EINTG_NUM(19) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [2] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG6 |
+			IG_BASE_GPIO_SET_EINTG_NUM(20) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [3] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG6 |
+			IG_BASE_GPIO_SET_EINTG_NUM(21) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [4] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG6 |
+			IG_BASE_GPIO_SET_EINTG_NUM(22) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [5] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG6 |
+			IG_BASE_GPIO_SET_EINTG_NUM(23) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [6] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG6 |
+			IG_BASE_GPIO_SET_EINTG_NUM(24) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [7] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG6 |
+			IG_BASE_GPIO_SET_EINTG_NUM(25) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [8] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG6 |
+			IG_BASE_GPIO_SET_EINTG_NUM(26) |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	},
+};
+static const struct ig_base_gpio_spec 
+ig_base_k_spec[IG_BASE_GET_COUNT(IG_BASE_K)] = {	/* GPK */
+	[0] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG5 |
+			IG_BASE_GPIO_SET_EINTG_NUM(0) |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [1] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG5 |
+			IG_BASE_GPIO_SET_EINTG_NUM(1) |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [2] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG5 |
+			IG_BASE_GPIO_SET_EINTG_NUM(2) |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [3] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG5 |
+			IG_BASE_GPIO_SET_EINTG_NUM(3) |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [4] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG5 |
+			IG_BASE_GPIO_SET_EINTG_NUM(4) |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [5] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG5 |
+			IG_BASE_GPIO_SET_EINTG_NUM(5) |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [6] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG5 |
+			IG_BASE_GPIO_SET_EINTG_NUM(6) |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [7] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG5 |
+			IG_BASE_GPIO_SET_EINTG_NUM(7) |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [8] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG5 |
+			IG_BASE_GPIO_SET_EINTG_NUM(8) |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [9] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG5 |
+			IG_BASE_GPIO_SET_EINTG_NUM(9) |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [10] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG5 |
+			IG_BASE_GPIO_SET_EINTG_NUM(10) |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [11] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG5 |
+			IG_BASE_GPIO_SET_EINTG_NUM(11) |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [12] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG5 |
+			IG_BASE_GPIO_SET_EINTG_NUM(12) |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [13] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG5 |
+			IG_BASE_GPIO_SET_EINTG_NUM(13) |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [14] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG5 |
+			IG_BASE_GPIO_SET_EINTG_NUM(14) |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [15] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG5 |
+			IG_BASE_GPIO_SET_EINTG_NUM(15) |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	},
+};
+static const struct ig_base_gpio_spec
+ig_base_l_spec[IG_BASE_GET_COUNT(IG_BASE_L)] = {	/* GPL */
+	[0] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG6 |
+			IG_BASE_GPIO_SET_EINTG_NUM(27) |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL0,
+	}, [1] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG6 |
+			IG_BASE_GPIO_SET_EINTG_NUM(28) |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [2] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG6 |
+			IG_BASE_GPIO_SET_EINTG_NUM(29) |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [3] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG6 |
+			IG_BASE_GPIO_SET_EINTG_NUM(30) |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [4] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG6 |
+			IG_BASE_GPIO_SET_EINTG_NUM(31) |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL0,
+	}, [5] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG5 |
+			IG_BASE_GPIO_SET_EINTG_NUM(24) |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [6] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG5 |
+			IG_BASE_GPIO_SET_EINTG_NUM(25) |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [7] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG5 |
+			IG_BASE_GPIO_SET_EINTG_NUM(26) |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [8] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG5 |
+			IG_BASE_GPIO_SET_EINTG_NUM(27) |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [9] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG5 |
+			IG_BASE_GPIO_SET_EINTG_NUM(28) |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [10] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG5 |
+			IG_BASE_GPIO_SET_EINTG_NUM(29) |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [11] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG5 |
+			IG_BASE_GPIO_SET_EINTG_NUM(30) |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [12] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG5 |
+			IG_BASE_GPIO_SET_EINTG_NUM(31) |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	},
+};
+static const struct ig_base_gpio_spec 
+ig_base_m_spec[IG_BASE_GET_COUNT(IG_BASE_M)] = {	/* GPM */
+	[0] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG5 |
+			IG_BASE_GPIO_SET_EINTG_NUM(16) |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [1] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG5 |
+			IG_BASE_GPIO_SET_EINTG_NUM(17) |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [2] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG5 |
+			IG_BASE_GPIO_SET_EINTG_NUM(18) |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [3] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL0,
+	}, [4] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL0,
+	}, [5] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL0,
+	}, [6] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL0,
+	}, [7] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL0,
+	}, [8] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG5 |
+			IG_BASE_GPIO_SET_EINTG_NUM(19) |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [9] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG5 |
+			IG_BASE_GPIO_SET_EINTG_NUM(20) |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [10] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL0,
+	}, [11] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL0,
+	}, [12] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL0,
+	}, [13] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL0,
+	}, [14] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL0,
+	}, [15] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL0,
+	},
+};
+static const struct ig_base_gpio_spec 
+ig_base_n_spec[IG_BASE_GET_COUNT(IG_BASE_N)] = {	/* GPN */
+	[0] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG5 |
+			IG_BASE_GPIO_SET_EINTG_NUM(21) |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [1] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG5 |
+			IG_BASE_GPIO_SET_EINTG_NUM(22) |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [2] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG5 |
+			IG_BASE_GPIO_SET_EINTG_NUM(23) |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [3] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL0,
+	}, [4] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL0,
+	}, [5] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL0,
+	}, [6] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL0,
+	}, [7] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL0,
+	}, [8] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL0,
+	}, [9] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL0,
+	}, [10] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL0,
+	}, [11] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL0,
+	}, [12] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL0,
+	}
+};
+static const struct ig_base_gpio_spec 
+ig_base_o_spec[IG_BASE_GET_COUNT(IG_BASE_O)] = {	/* GPO */
+	[0] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	}, [1] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	}, [2] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG4 |
+			IG_BASE_GPIO_SET_EINTG_NUM(24) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	}, [3] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG4 |
+			IG_BASE_GPIO_SET_EINTG_NUM(25) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	}, [4] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG4 |
+			IG_BASE_GPIO_SET_EINTG_NUM(26) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	}, [5] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG4 |
+			IG_BASE_GPIO_SET_EINTG_NUM(27) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	}, [6] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [7] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [8] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG4 |
+			IG_BASE_GPIO_SET_EINTG_NUM(28) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [9] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG4 |
+			IG_BASE_GPIO_SET_EINTG_NUM(29) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	}, [10] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG4 |
+			IG_BASE_GPIO_SET_EINTG_NUM(30) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	}, [11] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_EINTG4 |
+			IG_BASE_GPIO_SET_EINTG_NUM(31) |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [12] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [13] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	}, [14] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL1 |
+			IG_BASE_FEATURE_CTRL0,
+	}, [15] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	},
+};
+static const struct ig_base_gpio_spec 
+ig_base_p_spec[IG_BASE_GET_COUNT(IG_BASE_P)] = {	/* GPP */
+	[0] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	}, [1] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	}, [2] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	}, [3] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	}, [4] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	}, [5] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	}, [6] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	}, [7] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	}, [8] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	}, [9] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	}, [10] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	}, [11] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	},
+};
+static const struct ig_base_gpio_spec 
+ig_base_q_spec[IG_BASE_GET_COUNT(IG_BASE_Q)] = {	/* GPQ */
+	[0] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	}, [1] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL0,
+	}, [2] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_DOWN |
+			IG_BASE_FEATURE_CTRL0,
+	}, [3] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	}, [4] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	}, [5] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	},
+};
+static const struct ig_base_gpio_spec 
+ig_base_r_spec[IG_BASE_GET_COUNT(IG_BASE_R)] = {	/* GPR */
+	[0] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	}, [1] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	}, [2] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	}, [3] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	}, [4] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	}, [5] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	}, [6] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	}, [7] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	}, [8] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	}, [9] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	}, [10] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	}, [11] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	}, [12] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	}, [13] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	}, [14] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	}, [15] = {
+		.feature = IG_BASE_FEATURE_COMMON |
+			IG_BASE_FEATURE_PULL_UP |
+			IG_BASE_FEATURE_CTRL0,
+	},
+};
+
+/* Const data structure which contains all gpio informations. */
+static const struct ig_base_group
+ig_base_all_groups[IG_BASE_COUNT] = {
+	[IG_BASE_GET_INDEX(IG_BASE_A)] = { 	/* GPA */
+		.spec = ig_base_a_spec,
+		.count = IG_BASE_GET_COUNT(IG_BASE_A),
+		.dat = rGPADAT,
+		.con = rGPACON,
+		.pud = rGPAPUD,
+		.lock = SPIN_LOCK_UNLOCKED,
+	}, [IG_BASE_GET_INDEX(IG_BASE_B)] = {	/* GPB */
+		.spec = ig_base_b_spec,
+		.count = IG_BASE_GET_COUNT(IG_BASE_B),
+		.dat = rGPBDAT,
+		.con = rGPBCON,
+		.pud = rGPBPUD,
+		.lock = SPIN_LOCK_UNLOCKED,
+	}, [IG_BASE_GET_INDEX(IG_BASE_C)] = {	/* GPC */
+		.spec = ig_base_c_spec,
+		.count = IG_BASE_GET_COUNT(IG_BASE_C),
+		.dat = rGPCDAT,
+		.con = rGPCCON,
+		.pud = rGPCPUD,
+		.lock = SPIN_LOCK_UNLOCKED,
+	}, [IG_BASE_GET_INDEX(IG_BASE_D)] = {	/* GPD */
+		.spec = ig_base_d_spec,
+		.count = IG_BASE_GET_COUNT(IG_BASE_D),
+		.dat = rGPDDAT,
+		.con = rGPDCON,
+		.pud = rGPDPUD,
+		.lock = SPIN_LOCK_UNLOCKED,
+	}, [IG_BASE_GET_INDEX(IG_BASE_E)] = {	/* GPE */
+		.spec = ig_base_e_spec,
+		.count = IG_BASE_GET_COUNT(IG_BASE_E),
+		.dat = rGPEDAT,
+		.con = rGPECON,
+		.pud = rGPEPUD,
+		.lock = SPIN_LOCK_UNLOCKED,
+	}, [IG_BASE_GET_INDEX(IG_BASE_F)] = {	/* GPF */
+		.spec = ig_base_f_spec,
+		.count = IG_BASE_GET_COUNT(IG_BASE_F),
+		.dat = rGPFDAT,
+		.con = rGPFCON,
+		.pud = rGPFPUD,
+		.lock = SPIN_LOCK_UNLOCKED,
+	}, [IG_BASE_GET_INDEX(IG_BASE_G)] = {	/* GPG */
+		.spec = ig_base_g_spec,
+		.count = IG_BASE_GET_COUNT(IG_BASE_G),
+		.dat = rGPGDAT,
+		.con = rGPGCON,
+		.pud = rGPGPUD,
+		.lock = SPIN_LOCK_UNLOCKED,
+	}, [IG_BASE_GET_INDEX(IG_BASE_H)] = {	/* GPH */
+		.spec = ig_base_h_spec,
+		.count = IG_BASE_GET_COUNT(IG_BASE_H),
+		.dat = rGPHDAT,
+		.con = rGPHCON,
+		.pud = rGPHPUD,
+		.lock = SPIN_LOCK_UNLOCKED,
+	}, [IG_BASE_GET_INDEX(IG_BASE_I)] = {	/* GPI */
+		.spec = ig_base_i_spec,
+		.count = IG_BASE_GET_COUNT(IG_BASE_I),
+		.dat = rGPIDAT,
+		.con = rGPICON,
+		.pud = rGPIPUD,
+		.lock = SPIN_LOCK_UNLOCKED,
+	}, [IG_BASE_GET_INDEX(IG_BASE_J)] = {	/* GPJ */
+		.spec = ig_base_j_spec,
+		.count = IG_BASE_GET_COUNT(IG_BASE_J),
+		.dat = rGPJDAT,
+		.con = rGPJCON,
+		.pud = rGPJPUD,
+		.lock = SPIN_LOCK_UNLOCKED,
+	}, [IG_BASE_GET_INDEX(IG_BASE_K)] = {	/* GPK */
+		.spec = ig_base_k_spec,
+		.count = IG_BASE_GET_COUNT(IG_BASE_K),
+		.dat = rGPKDAT,
+		.con = rGPKCON,
+		.pud = rGPKPUD,
+		.lock = SPIN_LOCK_UNLOCKED,
+	}, [IG_BASE_GET_INDEX(IG_BASE_L)] = {	/* GPL */
+		.spec = ig_base_l_spec,
+		.count = IG_BASE_GET_COUNT(IG_BASE_L),
+		.dat = rGPLDAT,
+		.con = rGPLCON,
+		.pud = rGPLPUD,
+		.lock = SPIN_LOCK_UNLOCKED,
+	}, [IG_BASE_GET_INDEX(IG_BASE_M)] = {	/* GPM */
+		.spec = ig_base_m_spec,
+		.count = IG_BASE_GET_COUNT(IG_BASE_M),
+		.dat = rGPMDAT,
+		.con = rGPMCON,
+		.pud = rGPMPUD,
+		.lock = SPIN_LOCK_UNLOCKED,
+	}, [IG_BASE_GET_INDEX(IG_BASE_N)] = {	/* GPN */
+		.spec = ig_base_n_spec,
+		.count = IG_BASE_GET_COUNT(IG_BASE_N),
+		.dat = rGPNDAT,
+		.con = rGPNCON,
+		.pud = rGPNPUD,
+		.lock = SPIN_LOCK_UNLOCKED,
+	}, [IG_BASE_GET_INDEX(IG_BASE_O)] = {	/* GPO */
+		.spec = ig_base_o_spec,
+		.count = IG_BASE_GET_COUNT(IG_BASE_O),
+		.dat = rGPODAT,
+		.con = rGPOCON,
+		.pud = rGPOPUD,
+		.lock = SPIN_LOCK_UNLOCKED,
+	}, [IG_BASE_GET_INDEX(IG_BASE_P)] = {	/* GPP */
+		.spec = ig_base_p_spec,
+		.count = IG_BASE_GET_COUNT(IG_BASE_P),
+		.dat = rGPPDAT,
+		.con = rGPPCON,
+		.pud = rGPPPUD,
+		.lock = SPIN_LOCK_UNLOCKED,
+	}, [IG_BASE_GET_INDEX(IG_BASE_Q)] = {	/* GPQ */
+		.spec = ig_base_q_spec,
+		.count = IG_BASE_GET_COUNT(IG_BASE_Q),
+		.dat = rGPQDAT,
+		.con = rGPQCON,
+		.pud = rGPQPUD,
+		.lock = SPIN_LOCK_UNLOCKED,
+	}, [IG_BASE_GET_INDEX(IG_BASE_R)] = {	/* GPR */
+		.spec = ig_base_r_spec,
+		.count = IG_BASE_GET_COUNT(IG_BASE_R),
+		.dat = rGPRDAT,
+		.con = rGPRCON,
+		.pud = rGPRPUD,
+		.lock = SPIN_LOCK_UNLOCKED,
+	},
+};
+
+/* Sleep groups maps. */
+static const struct ig_base_sleep_map 
+ig_base_all_sleep_maps[IG_BASE_SLEEP_COUNT] = {
+	[IG_BASE_GET_SLEEP_INDEX(IG_BASE_A)] = {
+		.ctrl = rGPA_SLP_CTRL,
+		.dat = rSLP_GPADAT,
+		.con = rSLP_GPACON,
+		.pud = rSLP_GPAPUD,
+	}, [IG_BASE_GET_SLEEP_INDEX(IG_BASE_B)] = {
+		.ctrl = rGPB_SLP_CTRL,
+		.dat = rSLP_GPBDAT,
+		.con = rSLP_GPBCON,
+		.pud = rSLP_GPBPUD,
+	}, [IG_BASE_GET_SLEEP_INDEX(IG_BASE_O)] = {
+		.ctrl = rGPO_SLP_CTRL,
+		.dat = rSLP_GPODAT,
+		.con = rSLP_GPOCON,
+		.pud = rSLP_GPOPUD,
+	},
+};
+
+/* ############################################################################## */
+
+#define IG_BASE_GROUP(group)	\
+	ig_base_all_groups[IG_BASE_GET_INDEX(group)]
+#define IG_BASE_SPEC(group, id)	\
+	ig_base_all_groups[IG_BASE_GET_INDEX(group)].spec[id]
+
+#define IG_BASE_SLEEP_GROUP(group)	\
+	ig_base_all_sleep_maps[IG_BASE_GET_SLEEP_INDEX(group)]
+
+/* This macro for better code view because most APIs shares the same
+ * error check code. */
+#define IG_BASE_GPIO_CHECK_PARAM(group, id, retcode)	do { \
+	switch (group) { \
+		case IG_BASE_A: \
+		case IG_BASE_B: \
+		case IG_BASE_C: \
+		case IG_BASE_D: \
+		case IG_BASE_E: \
+		case IG_BASE_F: \
+		case IG_BASE_H: \
+		case IG_BASE_I: \
+		case IG_BASE_J: \
+		case IG_BASE_K: \
+		case IG_BASE_L: \
+		case IG_BASE_M: \
+		case IG_BASE_N: \
+		case IG_BASE_O: \
+		case IG_BASE_P: \
+		case IG_BASE_Q: \
+		case IG_BASE_R: \
+			if (unlikely(id >= IG_BASE_GET_COUNT(group))) { \
+				IG_PANIC("Invalid GPIO id %d, " \
+						"please make sure, " \
+						"it's not funny!", id); \
+				retcode = -EINVAL; \
+				break; \
+			} \
+			retcode = 0; \
+			break; \
+		case IG_BASE_G: \
+			IG_PANIC("External interrupt should not " \
+					"be used by calling like this."); \
+			retcode = -EINVAL; \
+			break; \
+		default: \
+			IG_PANIC("Invalid GPIO group, " \
+					"please make sure, " \
+					"it's not funny!"); \
+			retcode = -EINVAL; \
+			break; \
+	}; \
+} while (0)
+
+/*
+ * FUNCTION
+ * ig_base_setslp()
+ *
+ * Set gpio mode to be sleep or normal.
+ */
+unsigned int ig_base_setslp(unsigned int group, unsigned int id,
+		unsigned int sleep)
+{
+	int retcode = 0;
+	unsigned int val = 0;
+	void __iomem *slp_ctrl = NULL;
+
+	/* Check parameters validation. */
+	IG_BASE_GPIO_CHECK_PARAM(group, id, retcode);
+	if (unlikely(retcode)) {
+		return IG_BASE_DATA_ERROR;
+	}
+
+	/* Get sleep mode A/B/O ctrl. */
+	if (likely(IG_BASE_CAN_SLEEP(group))) {
+		slp_ctrl = IG_BASE_SLEEP_GROUP(group).ctrl;
+	} else {
+		IG_PANIC("Current gpio has no sleep mode!");
+		return IG_BASE_CFG_ERROR;
+	}
+
+	spin_lock(&IG_BASE_GROUP(group).lock);
+	val = readl(slp_ctrl);
+	if (sleep) {
+		val |= (1 << id);
+	} else {
+		val &= ~(1 << id);
+	}
+	writel(val, slp_ctrl);
+	spin_unlock(&IG_BASE_GROUP(group).lock);
+
+	IG_DEBUG("chmod/setslp: GP%c[%d] is set to be *%s*.\n", 
+			(char)((group & IG_BASE_GROUP_GROUP) >> IG_BASE_GROUP_BS_GROUP), 
+			id, sleep ? "sleep" : "normal");
+
+	return sleep;
+}
+EXPORT_SYMBOL(ig_base_setslp);
+
+/*
+ * FUNCTION
+ * ig_base_is_sleep()
+ *
+ * Check whether gpio is set to be sleep mode.
+ */
+unsigned int ig_base_is_sleep(unsigned int group, unsigned int id)
+{
+	int retcode = 0;
+	unsigned int val = 0;
+	void __iomem *slp_ctrl = NULL;
+
+	IG_BASE_GPIO_CHECK_PARAM(group, id, retcode);
+	if (unlikely(retcode)) {
+		return IG_BASE_DATA_ERROR;
+	}
+
+	if (likely(IG_BASE_CAN_SLEEP(group))) {
+		/* Get sleep A/B/O ctrl. */
+		slp_ctrl = IG_BASE_SLEEP_GROUP(group).ctrl;
+
+		spin_lock(&IG_BASE_GROUP(group).lock);
+		val = readl(slp_ctrl);
+		spin_unlock(&IG_BASE_GROUP(group).lock);
+		val &= (1 << id);
+		val >>= id;
+	} else {
+		IG_PANIC("Current gpio has no sleep mode!");
+		return IG_BASE_DATA_ERROR;
+	}
+
+	IG_DEBUG("is_sleep: GP%c[%d] *%s* in sleep mode.\n",
+			(char)((group & IG_BASE_GROUP_GROUP) >> IG_BASE_GROUP_BS_GROUP), 
+			id, val ? "is" : "isn't");
+
+	return val;
+}
+EXPORT_SYMBOL(ig_base_is_sleep);
+
+/*
+ * FUNCTION
+ * ig_base_setcfg()
+ *
+ * Set a gpio cfg caller needs by assigned parameters.
+ */
+unsigned int ig_base_setcfg(unsigned int group, unsigned int id, 
+		unsigned int cfg, unsigned int sleep)
+{
+	int retcode = 0;
+	unsigned int val = 0;
+	void __iomem *slp_con = NULL;
+
+	/* Check parameters validation. */
+	IG_BASE_GPIO_CHECK_PARAM(group, id, retcode);
+	if (unlikely(retcode)) {
+		return IG_BASE_CFG_ERROR;
+	}
+	/* Check cfg. */
+	switch (cfg) {
+		case IG_BASE_CFG_INPUT:
+			if (unlikely(!IG_BASE_GPIO_INPUT_ABLE(IG_BASE_SPEC(group, id).feature))) {
+				IG_PANIC("Current gpio can't be set to be input.");
+				return IG_BASE_CFG_ERROR;
+			}
+			break;
+		case IG_BASE_CFG_OUTPUT:
+			if (unlikely(!IG_BASE_GPIO_OUTPUT_ABLE(IG_BASE_SPEC(group, id).feature))) {
+				IG_PANIC("Current gpio can't be set to be output.");
+				return IG_BASE_CFG_ERROR;
+			}
+			break;
+		case IG_BASE_CFG_CTRL0:
+			if (unlikely(!IG_BASE_GPIO_CTRL0_ABLE(IG_BASE_SPEC(group, id).feature))) {
+				IG_PANIC("Current gpio can't be set to be 10.");
+				return IG_BASE_CFG_ERROR;
+			}
+			break;
+		case IG_BASE_CFG_CTRL1:
+			if (unlikely(!IG_BASE_GPIO_CTRL1_ABLE(IG_BASE_SPEC(group, id).feature))) {
+				IG_PANIC("Current gpio can't be set to be 11.");
+				return IG_BASE_CFG_ERROR;
+			}
+			break;
+		default:
+			IG_PANIC("Error setting cfg, make sure!");
+			return IG_BASE_CFG_ERROR;
+	}
+	/* Check sleep config validation. */
+	if (sleep) {
+		if (unlikely(!IG_BASE_CAN_SLEEP(group))) {
+			IG_PANIC("Current gpio can't be set to be sleep mode!");
+			return IG_BASE_CFG_ERROR;
+		}
+		if (unlikely((cfg == IG_BASE_CFG_CTRL0) || (cfg == IG_BASE_CFG_CTRL1))) {
+			IG_PANIC("Sleep gpio mode can only be input or output!\n");
+			return IG_BASE_CFG_ERROR;
+		}
+		/* Get sleep mode A/B/O con. */
+		slp_con = IG_BASE_SLEEP_GROUP(group).con;
+	}
+
+	spin_lock(&IG_BASE_GROUP(group).lock);
+	if (sleep) {
+		/* Set gpio input/output in sleep mode. */
+		val = readl(slp_con);
+		switch (cfg) {
+			case IG_BASE_CFG_INPUT:
+				val |= (1 << id);
+				break;
+			case IG_BASE_CFG_OUTPUT:
+				val &= ~(1 << id);
+				break;
+			default:
+				/* Pre check has ensured that code will never 
+				 * reache here. */
+				break;
+		}
+		writel(val, slp_con);
+	} else {
+		/* XXX: GPIO useage tutorial. */
+		/* Step1, read 32bits value from gpio register. */
+		val = readl(IG_BASE_GROUP(group).con);
+		/* Step2, clear correspond data bits. */
+		val &= ~(3 << (id << 1));
+		/* Step3, set correspond bits. */
+		val |= (cfg << (id << 1));
+		/* Step4, write back to gpio register. */
+		writel(val, IG_BASE_GROUP(group).con);
+	}
+	spin_unlock(&IG_BASE_GROUP(group).lock);
+
+#if defined(CONFIG_IG_DEBUG_ENABLE)
+	{
+		char *cfg_name = NULL;
+
+		switch (cfg) {
+			case IG_BASE_CFG_INPUT:
+				cfg_name = "input";
+				break;
+			case IG_BASE_CFG_OUTPUT:
+				cfg_name = "output";
+				break;
+			case IG_BASE_CFG_CTRL0:
+				cfg_name = "ctrl0";
+				break;
+			case IG_BASE_CFG_CTRL1:
+				cfg_name = "ctrl1";
+				break;
+			default:
+				cfg_name = "error";
+				break;
+		}
+		IG_DEBUG("setcfg: GP%c[%d] *%s* con is set to be *%s*.\n",
+				(char)((group & IG_BASE_GROUP_GROUP) >> IG_BASE_GROUP_BS_GROUP), 
+				id, sleep ? "sleep" : "normal", cfg_name);
+	}
+#endif
+
+	return cfg;
+}
+EXPORT_SYMBOL(ig_base_setcfg);
+
+/*
+ * FUNCTION
+ * ig_base_getcfg()
+ *
+ * Get current gpio cfg.
+ */
+unsigned int ig_base_getcfg(unsigned int group, unsigned int id, 
+		unsigned int sleep)
+{
+	int retcode = 0;
+	unsigned int val = 0;
+	void __iomem *slp_con = NULL;
+
+	IG_BASE_GPIO_CHECK_PARAM(group, id, retcode);
+	if (unlikely(retcode)) {
+		return IG_BASE_CFG_ERROR;
+	}
+
+	/* Get sleep con if A/B/O. */
+	if (sleep) {
+		if (likely(IG_BASE_CAN_SLEEP(group))) {
+			slp_con = IG_BASE_SLEEP_GROUP(group).con;
+		} else {
+			IG_PANIC("Current gpio has no sleep mode!");
+			return IG_BASE_CFG_ERROR;
+		}
+	}
+
+	spin_lock(&IG_BASE_GROUP(group).lock);
+	if (sleep) {
+		val = readl(slp_con);
+		val &= (1 << id);
+		/* val >>= id; */	/* It is not neccessary actually. */
+		val = val ? IG_BASE_CFG_INPUT : IG_BASE_CFG_OUTPUT;
+	} else {
+		/* Normal mode in A/B/O. */
+		val = readl(IG_BASE_GROUP(group).con);
+		val &= (3 << (id << 1));
+		val >>= (id << 1);
+	}
+	spin_unlock(&IG_BASE_GROUP(group).lock);
+
+#if defined(CONFIG_IG_DEBUG_ENABLE)
+	{
+		char *cfg_name = NULL;
+
+		switch (val) {
+			case IG_BASE_CFG_INPUT:
+				cfg_name = "input";
+				break;
+			case IG_BASE_CFG_OUTPUT:
+				cfg_name = "output";
+				break;
+			case IG_BASE_CFG_CTRL0:
+				cfg_name = "ctrl0";
+				break;
+			case IG_BASE_CFG_CTRL1:
+				cfg_name = "ctrl1";
+				break;
+			default:
+				cfg_name = "error";
+				break;
+		}
+		IG_DEBUG("getcfg: GP%c[%d] *%s* con currently is *%d - %s*.\n",
+				(char)((group & IG_BASE_GROUP_GROUP) >> IG_BASE_GROUP_BS_GROUP), 
+				id, sleep ? "sleep" : "normal", val, cfg_name);
+	}
+#endif
+	return val;
+}
+EXPORT_SYMBOL(ig_base_getcfg);
+
+/*
+ * FUNCTION
+ * ig_base_getpin()
+ *
+ * Read data from assigned gpio. I think actually no one will use
+ * this function API.
+ */
+unsigned int ig_base_getpin(unsigned int group, unsigned int id, 
+		unsigned int sleep)
+{
+	int retcode = 0;
+	unsigned int val = 0;
+	void __iomem *slp_dat = NULL;
+
+	/* 
+	 * The GPG group gpios has a dat register, but read only.
+	 * So here, I have to process GPG especially. This part
+	 * is not in original design, but finally we find this 
+	 * might be used somewhere.
+	 */
+	if (group == IG_BASE_G) {
+		if (unlikely(id >= IG_BASE_GET_COUNT(group))) {
+			IG_PANIC("Invalid GPG id %d", id);
+			return IG_BASE_DATA_ERROR;
+		}
+		spin_lock(&IG_BASE_GROUP(group).lock);
+		val = readl(IG_BASE_GROUP(group).dat);
+		spin_unlock(&IG_BASE_GROUP(group).lock);
+		val &= (1 << id);
+		val >>= id;
+		return val;
+	}
+
+	IG_BASE_GPIO_CHECK_PARAM(group, id, retcode);
+	if (unlikely(retcode)) {
+		return IG_BASE_DATA_ERROR;
+	}
+
+	/* Get sleep dat if A/B/O. */
+	if (sleep) {
+		if (likely(IG_BASE_CAN_SLEEP(group))) {
+			slp_dat = IG_BASE_SLEEP_GROUP(group).dat;
+		} else {
+			IG_PANIC("Current gpio has no sleep mode!");
+			return IG_BASE_DATA_ERROR;
+		}
+	}
+
+	spin_lock(&IG_BASE_GROUP(group).lock);
+	if (sleep) {
+		val = readl(slp_dat);
+	} else {
+		val = readl(IG_BASE_GROUP(group).dat);
+	}
+	spin_unlock(&IG_BASE_GROUP(group).lock);
+	val &= (1 << id);
+	val >>= id;
+
+	IG_DEBUG("getpin: GP%c[%d] *%s* dat currently is *%s*.\n",
+			(char)((group & IG_BASE_GROUP_GROUP) >> IG_BASE_GROUP_BS_GROUP), 
+			id, sleep ? "sleep" : "normal", val ? "1 - high" : "0 - low");
+	return val;
+}
+EXPORT_SYMBOL(ig_base_getpin);
+
+/*
+ * FUNCTION
+ * ig_base_setpin()
+ *
+ * Write data to assigned gpio.
+ */
+unsigned int ig_base_setpin(unsigned int group, unsigned int id, 
+		unsigned int data, unsigned int sleep)
+{
+	int retcode = 0;
+	unsigned int val = 0;
+	void __iomem *slp_dat = NULL;
+
+	IG_BASE_GPIO_CHECK_PARAM(group, id, retcode);
+	if (retcode) {
+		return IG_BASE_DATA_ERROR;
+	}
+	switch (data) {
+		case 0:
+		case 1:
+			break;
+		default:
+			IG_PANIC("Gpio data only 0 and 1 is valid!");
+			return IG_BASE_DATA_ERROR;
+	}
+	/* Process GPC, GPC group gpios is open drained, so the write 
+	 * data to it should be oposite. */
+	if (IG_BASE_GPIO_IS_OPOSITE(IG_BASE_SPEC(group, id).feature)) {
+		data = (~data) & 1;
+	}
+
+	/* Get sleep dat if A/B/O. */
+	if (sleep) {
+		if (likely(IG_BASE_CAN_SLEEP(group))) {
+			slp_dat = IG_BASE_SLEEP_GROUP(group).dat;
+		} else {
+			IG_PANIC("Current gpio has no sleep mode!");
+			return IG_BASE_DATA_ERROR;
+		}
+	}
+
+	spin_lock(&IG_BASE_GROUP(group).lock);
+	/* If a gpio is to be written, first we have to read its current value.
+	 * Then process the read value and write back to gpio register. */
+	if (sleep) {
+		val = readl(slp_dat);
+		val &= ~(1 << id);
+		val |= (data << id);
+		writel(val, slp_dat);
+	} else {
+		val = readl(IG_BASE_GROUP(group).dat);
+		val &= ~(1 << id);
+		val |= (data << id);
+		writel(val, IG_BASE_GROUP(group).dat);
+	}
+	spin_unlock(&IG_BASE_GROUP(group).lock);
+
+	IG_DEBUG("setpin: GP%c[%d] *%s* dat is set to be *%s*.\n",
+			(char)((group & IG_BASE_GROUP_GROUP) >> IG_BASE_GROUP_BS_GROUP), 
+			id, sleep ? "sleep" : "normal", data ? "1 - high" : "0 - low");
+	return data;
+}
+EXPORT_SYMBOL(ig_base_setpin);
+
+/*
+ * FUNCTION
+ * ig_base_pull()
+ *
+ * Directly pullup up or down a gpio.
+ */
+void ig_base_pull(unsigned int group, unsigned int id, 
+		unsigned int en, unsigned int sleep)
+{
+	int retcode = 0;
+	unsigned int val = 0;
+	void __iomem *slp_pud = NULL;
+
+	IG_BASE_GPIO_CHECK_PARAM(group, id, retcode);
+	if (unlikely(retcode)) {
+		return;
+	}
+
+	en = en ? 1 : 0;
+	/* Get sleep pud if A/B/O. */
+	if (sleep) {
+		if (likely(IG_BASE_CAN_SLEEP(group))) {
+			slp_pud = IG_BASE_SLEEP_GROUP(group).pud;
+		} else {
+			IG_PANIC("Current gpio has no sleep mode!");
+			return;
+		}
+	}
+
+	spin_lock(&IG_BASE_GROUP(group).lock);
+	if (sleep) {
+		val = readl(slp_pud);
+		val &= ~(1 << id);
+		val |= (en << id);
+		writel(val, slp_pud);
+	} else {
+		val = readl(IG_BASE_GROUP(group).pud);
+		val &= ~(1 << id);
+		val |= (en << id);
+		writel(val, IG_BASE_GROUP(group).pud);
+	}
+	spin_unlock(&IG_BASE_GROUP(group).lock);
+
+	IG_DEBUG("pull: GP%c[%d] *%s* pud is *%s*.\n",
+			(char)((group & IG_BASE_GROUP_GROUP) >> IG_BASE_GROUP_BS_GROUP), 
+			id, sleep ? "sleep" : "normal", en ? "enabled" : "disabled");
+}
+EXPORT_SYMBOL(ig_base_pull);
+
+/*
+ * FUNCTION
+ * ig_base_getpull()
+ *
+ * Get pull status.
+ */
+unsigned int ig_base_getpull(unsigned int group, unsigned int id,
+		unsigned int sleep)
+{
+	int retcode = 0;
+	unsigned int val = 0;
+	void __iomem *slp_pud = NULL;
+
+	IG_BASE_GPIO_CHECK_PARAM(group, id, retcode);
+	if (unlikely(retcode)) {
+		return IG_BASE_DATA_ERROR;
+	}
+
+	/* Get sleep pud if A/B/O. */
+	if (sleep) {
+		if (likely(IG_BASE_CAN_SLEEP(group))) {
+			slp_pud = IG_BASE_SLEEP_GROUP(group).pud;
+		} else {
+			IG_PANIC("Current gpio has no sleep mode!");
+			return IG_BASE_DATA_ERROR;
+		}
+	}
+
+	spin_lock(&IG_BASE_GROUP(group).lock);
+	if (sleep) {
+		val = readl(slp_pud);
+	} else {
+		val = readl(IG_BASE_GROUP(group).pud);
+	}
+	spin_unlock(&IG_BASE_GROUP(group).lock);
+	val &= (1 << id);
+	val >>= id;
+
+	IG_DEBUG("getpull: GP%c[%d] *%s* pud currently is *%s*.\n",
+			(char)((group & IG_BASE_GROUP_GROUP) >> IG_BASE_GROUP_BS_GROUP), 
+			id, sleep ? "sleep" : "normal", val ? "enabled" : "disabled");
+
+	return val;
+}
+EXPORT_SYMBOL(ig_base_getpull);
+
+/* ############################################################################## */
+
+/* Especial spinlock for external interrupt group. */
+static spinlock_t ig_base_eintg_lock = SPIN_LOCK_UNLOCKED;
+
+/* EINTG internal map structure. */
+static const struct ig_base_eintg_map
+ig_base_all_eintg_maps[IG_BASE_EINTG_COUNT] = {
+	[0] = {
+		.mask = rEINTG1MASK,
+		.pend = rEINTG1PEND,
+	}, [1] = {
+		.mask = rEINTG2MASK,
+		.pend = rEINTG2PEND,
+	}, [2] = {
+		.mask = rEINTG3MASK,
+		.pend = rEINTG3PEND,
+	}, [3] = {
+		.mask = rEINTG4MASK,
+		.pend = rEINTG4PEND,
+	}, [4] = {
+		.mask = rEINTG5MASK,
+		.pend = rEINTG5PEND,
+	}, [5] = {
+		.mask = rEINTG6MASK,
+		.pend = rEINTG6PEND,
+	},
+};
+#define IG_BASE_IRQ_GET_MASK_REG(group, id)	\
+	ig_base_all_eintg_maps[IG_BASE_GPIO_GET_EINTG_ID(IG_BASE_SPEC(group, id).feature)].mask
+#define IG_BASE_IRQ_GET_PEND_REG(group, id)	\
+	ig_base_all_eintg_maps[IG_BASE_GPIO_GET_EINTG_ID(IG_BASE_SPEC(group, id).feature)].pend
+
+#define IG_BASE_IRQ_CHECK_PARAM(group, id, retcode)	do { \
+	switch (group) { \
+		case IG_BASE_A: \
+		case IG_BASE_B: \
+		case IG_BASE_C: \
+		case IG_BASE_D: \
+		case IG_BASE_E:	\
+		case IG_BASE_F: \
+		case IG_BASE_H: \
+		case IG_BASE_I: \
+		case IG_BASE_J: \
+		case IG_BASE_K: \
+		case IG_BASE_L: \
+		case IG_BASE_M: \
+		case IG_BASE_N: \
+		case IG_BASE_O: \
+		case IG_BASE_P: \
+		case IG_BASE_Q: \
+		case IG_BASE_R: \
+			if (unlikely(id >= IG_BASE_GET_COUNT(group))) { \
+				IG_PANIC("Invalid GPIO id %d, " \
+						"please make sure, " \
+						"it's not funny!", id); \
+				retcode = -EINVAL; \
+				break; \
+			} else if (unlikely(!IG_BASE_GPIO_GET_EINTG(IG_BASE_SPEC(group, id).feature))) { \
+				IG_PANIC("Invalid GPIO, " \
+						"please make sure, " \
+						"it's not funny!"); \
+				retcode = -EINVAL; \
+				break; \
+			} \
+			retcode = 0; \
+			break; \
+		case IG_BASE_G: \
+			if (unlikely(id >= IG_BASE_GET_COUNT(group))) { \
+				IG_PANIC("Invalid GPIO id %d, " \
+						"please make sure, " \
+						"it's not funny!", id); \
+				retcode = -EINVAL; \
+				break; \
+			} \
+			retcode = 0; \
+			break; \
+		default: \
+			IG_PANIC("Invalid GPIO group, " \
+					"please make sure, " \
+					"it's not funny!"); \
+			retcode = -EINVAL; \
+			break; \
+	} \
+} while (0)
+
+/*
+ * FUNCTION
+ * ig_base_get_irq()
+ *
+ * Get irq number from gpio.
+ */
+int ig_base_get_irq(unsigned int group, unsigned int id)
+{
+	int retcode = 0;
+	int irq = IG_BASE_DATA_ERROR;
+
+	IG_BASE_IRQ_CHECK_PARAM(group, id, retcode);
+	if (retcode) {
+		return IG_BASE_DATA_ERROR;
+	}
+
+	if (group == IG_BASE_G) {
+		irq = IMAPX200_IRQ(id);
+	} else if (IG_BASE_GPIO_GET_EINTG(IG_BASE_SPEC(group, id).feature)) {
+		irq = IRQ_GPIO;
+	} else {
+		IG_PANIC("Current gpio does not belong to GPG or any EINTG!");
+	}
+
+	return irq;
+}
+
+/*
+ * FUNCTON
+ * ig_base_setirq()
+ *
+ * Set external irq generate mode.
+ */
+unsigned int ig_base_setirq(unsigned int group, unsigned int id, 
+		unsigned int flt, unsigned int mode, unsigned int en)
+{
+	int retcode = 0;
+	unsigned int val = 0;
+
+	IG_BASE_IRQ_CHECK_PARAM(group, id, retcode);
+	if (retcode) {
+		return IG_BASE_DATA_ERROR;
+	}
+	switch (mode) {
+		case IG_BASE_EINT_MODE_LL:
+		case IG_BASE_EINT_MODE_HL:
+		case IG_BASE_EINT_MODE_FET:
+		case IG_BASE_EINT_MODE_RET:
+		case IG_BASE_EINT_MODE_BET:
+			break;
+		default:
+			IG_PANIC("Error mode %d set to EINT[%d]!", 
+					mode, id);
+			break;
+	}
+
+	flt &= IG_BASE_FILTER_MAX;
+
+	if (group == IG_BASE_G) {	/* External interrupts. */
+		spin_lock(&IG_BASE_GROUP(group).lock);
+		/* Set irq. */
+		val = readl(rEINTCON);
+		val &= ~(15 << (id * 4));
+		val |= (mode << (id * 4));
+		writel(val, rEINTCON);
+		/* Set filter. */
+		if (id <= 3) {
+			val = readl(rEINTFLTCON0);
+			if (flt) {
+				val |= ((flt | IG_BASE_IRQ_FILTER_ENABLE) << 
+						(id << 3));
+			} else {
+				val &= ~(0xff << (id << 3));
+			}
+			writel(val, rEINTFLTCON0);
+		} else {
+			val = readl(rEINTFLTCON1);
+			if (flt) {
+				val |= ((flt | IG_BASE_IRQ_FILTER_ENABLE) << 
+						((id - 4) << 3));
+			} else {
+				val &= ~(0xff << ((id - 4) << 3));
+			}
+			writel(val, rEINTFLTCON1);
+		}
+		/* EINT does not need to set it umask. */
+		spin_unlock(&IG_BASE_GROUP(group).lock);
+	} else {	/* External interrupt groups. */
+		/* First caculate the eintr group id. */
+		unsigned int eintg_id = 
+			IG_BASE_GPIO_GET_EINTG_ID(IG_BASE_SPEC(group, id).feature);
+		unsigned int eintg_num = 
+			IG_BASE_GPIO_GET_EINTG_NUM(IG_BASE_SPEC(group, id).feature);
+		void __iomem *mask_reg = NULL;
+
+		spin_lock(&ig_base_eintg_lock);
+		/* 
+		 * All external interrupt group is enabled by setting gpio to
+		 * be input con. So first set gpio cfg to be input seems to be
+		 * reasonable, but it make the code overstaffed. So I just left
+		 * the set and check for user of gpio to do.
+		 */
+
+		/* Set irq. */
+		val = readl(rEINTGCON);
+		val &= ~(15 << (eintg_id * 4));
+		val |= (mode << (eintg_id * 4));
+		writel(val, rEINTGCON);
+		/* Set filter. */
+		if (eintg_id <= 3) {
+			val = readl(rEINTGFLTCON0);
+			if (flt) {
+				val |= (0xff << (eintg_id << 3));
+			} else {
+				val &= ~(0xff << (eintg_id << 3));
+			}
+			writel(val, rEINTGFLTCON0);
+		} else {
+			val = readl(rEINTGFLTCON1);
+			if (flt) {
+				val |= (0xff << ((eintg_id - 4) << 3));
+			} else {
+				val &= ~(0xff << ((eintg_id - 4) << 3));
+			}
+			writel(val, rEINTGFLTCON1);
+		}
+		/* Set unmask or mask. */
+		mask_reg = IG_BASE_IRQ_GET_MASK_REG(group, id);
+		val = readl(mask_reg);
+		if (en) {
+			/* Set correspond mask bit to be 0 to enable eintg. */
+			val &= ~(1 << eintg_num);
+		} else {
+			/* Set correspond mask bit to be 1 to mask it. */
+			val |= (1 << eintg_num);
+		}
+		writel(val, mask_reg);
+		spin_unlock(&ig_base_eintg_lock);
+	}
+
+	IG_DEBUG("setirq: GP%c[%d] correspond irq is *%s*, and flt is *%s* with 0x%2x.\n",
+			(char)((group & IG_BASE_GROUP_GROUP) >> IG_BASE_GROUP_BS_GROUP), 
+			id, en ? "enabled/unmasked" : "disabled/masked", 
+			flt ? "enabled" : "disabled", flt);
+
+	return mode;
+}
+EXPORT_SYMBOL(ig_base_setirq);
+
+/*
+ * FUNCTION
+ * ig_base_is_pending()
+ *
+ * Check irq pending status.
+ */
+unsigned int ig_base_is_pending(unsigned int group, unsigned int id, 
+		unsigned int clear)
+{
+	int retcode = 0;
+	void __iomem *pend_reg = NULL;
+	unsigned int val = 0;
+	unsigned int eintg_num = 0;
+
+	IG_BASE_IRQ_CHECK_PARAM(group, id, retcode);
+	if (retcode) {
+		return IG_BASE_DATA_ERROR;
+	}
+
+	if (group == IG_BASE_G) {
+		/* EINT pending bit is processed by system, directly access
+		 * it does not make sense. */
+		return 1;
+	}
+
+	/* Get pending register. */
+	pend_reg = IG_BASE_IRQ_GET_PEND_REG(group, id);
+	/* Calculate external interrupt number. */
+	eintg_num = IG_BASE_GPIO_GET_EINTG_NUM(IG_BASE_SPEC(group, id).feature);
+	spin_lock(&ig_base_eintg_lock);
+	val = readl(pend_reg);
+	val = (val & (1 << eintg_num)) ? 1 : 0;
+	if (clear && val) {
+		/* Clear pending bit by writing 1 to correspond bit. */
+		writel(1 << eintg_num, pend_reg);
+	}
+	spin_unlock(&ig_base_eintg_lock);
+
+	IG_DEBUG("is_pending: GP%c[%d] correspond irq is *%s*, and *%s*.\n",
+			(char)((group & IG_BASE_GROUP_GROUP) >> IG_BASE_GROUP_BS_GROUP), 
+			id, val ? "pending" : "not pending", clear ? "cleared" : "remains");
+
+	return val;
+}
+EXPORT_SYMBOL(ig_base_is_pending);
+
+/*
+ * FUNCTION
+ * ig_base_clear_pend()
+ *
+ * Clear gpio correspond irq pending bit.
+ */
+void ig_base_clear_pend(unsigned int group, unsigned int id)
+{
+	int retcode = 0;
+	void __iomem *pend_reg = NULL;
+	unsigned int val = 0;
+	unsigned int eintg_num = 0;
+
+	IG_BASE_IRQ_CHECK_PARAM(group, id, retcode);
+	if (retcode) {
+		return;
+	}
+	if (group == IG_BASE_G) {
+		/* System irq relate handle functions will process the
+		 * pending bit of eint. Manually do it does not make sense. */
+		return;
+	}
+
+	pend_reg = IG_BASE_IRQ_GET_PEND_REG(group, id);
+	eintg_num = IG_BASE_GPIO_GET_EINTG_NUM(IG_BASE_SPEC(group, id).feature);
+	spin_lock(&ig_base_eintg_lock);
+	val = readl(pend_reg);
+	/* val = (val & (1 << eintg_num)) ? 1 : 0; */	/* Instead by following code. */
+	val &= (1 << eintg_num);
+	/* Clear pending by writing 1 to correspond bit if there is any 
+	 * interrupts pending. */
+	if (val) {
+		writel(1 << eintg_num, pend_reg);
+	}
+	spin_unlock(&ig_base_eintg_lock);
+
+	IG_DEBUG("clear_pend: GP%c[%d] correspond irq is cleared.\n",
+			(char)((group & IG_BASE_GROUP_GROUP) >> IG_BASE_GROUP_BS_GROUP), 
+			id);
+}
+EXPORT_SYMBOL(ig_base_clear_pend);
+
+/*
+ * FUNCTION
+ * ig_base_unmask_irq()
+ *
+ * Unmask a gpio corresond irq.
+ */
+void ig_base_unmask_irq(unsigned int group, unsigned int id)
+{
+	int retcode = 0;
+	void __iomem *mask_reg = NULL;
+	unsigned int val = 0;
+	unsigned int eintg_num = 0;
+
+	IG_BASE_IRQ_CHECK_PARAM(group, id, retcode);
+	if (retcode) {
+		return;
+	}
+	
+	mask_reg = IG_BASE_IRQ_GET_MASK_REG(group, id);
+	eintg_num = IG_BASE_GPIO_GET_EINTG_NUM(IG_BASE_SPEC(group, id).feature);
+
+	spin_lock(&ig_base_eintg_lock);
+	val = readl(mask_reg);
+	val &= ~(1 << eintg_num);
+	writel(val, mask_reg);
+	spin_unlock(&ig_base_eintg_lock);
+
+	IG_DEBUG("unmask_irq: GP%c[%d] correspond irq is unmasked.\n",
+			(char)((group & IG_BASE_GROUP_GROUP) >> IG_BASE_GROUP_BS_GROUP), 
+			id);
+}
+EXPORT_SYMBOL(ig_base_unmask_irq);
+
+/*
+ * FUNCTION
+ * ig_base_mask_irq()
+ *
+ * Mask gpio correspind irq.
+ */
+void ig_base_mask_irq(unsigned int group, unsigned int id)
+{
+	int retcode = 0;
+	void __iomem *mask_reg = NULL;
+	unsigned int val = 0;
+	unsigned int eintg_num = 0;
+
+	IG_BASE_IRQ_CHECK_PARAM(group, id, retcode);
+	if (retcode) {
+		return;
+	}
+	
+	mask_reg = IG_BASE_IRQ_GET_MASK_REG(group, id);
+	eintg_num = IG_BASE_GPIO_GET_EINTG_NUM(IG_BASE_SPEC(group, id).feature);
+	spin_lock(&ig_base_eintg_lock);
+	val = readl(mask_reg);
+	val |= (1 << eintg_num);
+	writel(val, mask_reg);
+	spin_unlock(&ig_base_eintg_lock);
+
+	IG_DEBUG("mask_irq: GP%c[%d] correspond irq is masked.\n",
+			(char)((group & IG_BASE_GROUP_GROUP) >> IG_BASE_GROUP_BS_GROUP), 
+			id);
+}
+EXPORT_SYMBOL(ig_base_mask_irq);

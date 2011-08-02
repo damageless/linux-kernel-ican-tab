@@ -1,0 +1,25 @@
+#
+# Kconfig of IMAPX200 bluetooth driver.
+#
+# Sololz <sololz.luo@gmail.com>.
+#
+
+menuconfig IMAPX200_BLUETOOTH_DEVICE_SUPPORT
+	bool "IMAPX200 bluetooth devices support"
+	default n
+	---help---
+	TODO
+
+if IMAPX200_BLUETOOTH_DEVICE_SUPPORT
+config IMAPX200_BLUETOOTH_DEBUG
+	bool "Debug message print for IMAPX200 bluetooth driver."
+	default n
+	---help---
+	TODO
+
+config IMAPX200_BLUETOOTH_DEVICE_RDA5872P
+	bool "Support for RDA5872p v2.1 + EDR bluetooth module"
+	default y
+	---help---
+	TODO
+endif

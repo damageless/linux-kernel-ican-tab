@@ -1,0 +1,94 @@
+# accelarometers
+
+menuconfig IG_DEVICE_ACC
+	bool "enable accelarometer module"
+	default y
+
+# select settings
+
+if IG_DEVICE_ACC
+	
+# bma023, first imported by wwe10, caoqi
+config ACC_BMA023
+	bool "bma023"
+	select BOSCH_BMA150
+config ACC_BMA023_POWER
+	string "bma023 vcc"
+	depends on ACC_BMA023
+	default "N"
+config ACC_BMA023_INT
+	string "bma023 interrupt"
+	depends on ACC_BMA023
+	default "N"
+config ACC_BMA023_I2C
+	int "bma023 i2c channel(0 or 1)"
+	depends on ACC_BMA023
+	default 0
+config ACC_BMA023_CONVERT
+	string "convert indicator"
+	depends on ACC_BMA023
+	default "xyz"
+	help
+	  A string indicator to tell OS the correct direction. The
+	  default indicator is "xyz". If you want to switch x<-->y,
+	  you can use "yxz". If you want to revert the 'y' direction
+	  , you should use "xYz". Thus you can calculate out all the
+	  48 directions. (xyz, Yxz, ZyX ...)
+
+
+# freescall 7600, first imported by insistech, caoqi
+config ACC_FS7600
+	bool "fs7600"
+config ACC_FS7600_POWER
+	string "fs7600 vcc"
+	depends on ACC_FS7600
+	default "N"
+config ACC_FS7600_INT
+	string
+	depends on ACC_FS7600
+	default "N"
+config ACC_FS7600_I2C
+	int "fs7600 i2c channel(0 or 1)"
+	depends on ACC_FS7600
+	default 0
+config ACC_FS7600_DIRECTION
+	string "direction indicator"
+	depends on ACC_FS7600
+	default "udlr"
+	help
+	  a direction indicator is a four bytes string.
+	  like "udlr". This indicates the four directions:
+	  up, down, left and right. You can change this
+	  according to the sensors orientation.
+
+
+# rpi-1031, first imported by p7901a, caoqi
+config ACC_RPI1031
+	bool "rpi1031"
+config ACC_RPI1031_POWER
+	string "rpi1031 vcc"
+	depends on ACC_RPI1031
+	default "N"
+config ACC_RPI1031_BIT0
+	string "rpi1031 bit 0"
+	depends on ACC_RPI1031
+	default "N"
+config ACC_RPI1031_BIT1
+	string "rpi1031 bit 1"
+	depends on ACC_RPI1031
+	default "N"
+config ACC_RPI1031_DIRECTION
+	string "direction indicator"
+	depends on ACC_RPI1031
+	default "udlr"
+	help
+	  a direction indicator is a four bytes string.
+	  like "udlr". This indicates the four directions:
+	  up, down, left and right. You can change this
+	  according to the sensors orientation.
+
+endif
+
+# According to camera sensors might have different gpio connections,
+# camera driver developer should make config control here.
+

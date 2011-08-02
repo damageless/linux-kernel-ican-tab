@@ -1,0 +1,54 @@
+# Camera
+
+menuconfig IG_DEVICE_CAMERA1
+	bool "enable camif(1), the back one"
+	default y
+	select IMAP_CAMIF
+
+# select settings
+
+if IG_DEVICE_CAMERA1
+
+# camera global powers
+config IG_CAMIF1_SUPPLY
+	string "camif power supply"
+	default "N"
+config IG_CAMIF1_PND
+	string "camif power down"
+	default "N"
+config IG_CAMIF1_CS
+	string "camif chip select"
+	default "N"
+config IG_CAMIF1_I2C
+	int "camif i2c channel(0 or 1)"
+	default 0
+
+
+comment "choose a driver"
+
+config CAM_COMBINE
+	bool "camif combined driver"
+# ov2640, first imported by wwe10, peter
+config CAM_OV2640
+	bool "ov2640, 2 Mega"
+# ov2650, first imported by wwe10, peter
+config CAM_OV2650
+	bool "ov2650, 2 Mega"
+# ov2655, first imported by wwe10, peter
+config CAM_OV2655
+	bool "ov2655, 2 Mega"
+# ov5642, first imported by adpk, warits
+config CAM_OV5642
+	bool "ov5642, 5 Mega"
+# gt2005, first imported by wwe10, peter
+config CAM_GT2005
+	bool "gt2005, 2 Mega"
+# hy252, first imported by wwe10, peter
+config CAM_HY252
+	bool "hy252, 2 Mega"
+
+endif
+
+# According to camera sensors might have different gpio connections,
+# camera driver developer should make config control here.
+

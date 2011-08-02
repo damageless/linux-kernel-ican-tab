@@ -1,0 +1,5 @@
+# Misc config, if some scattered GPIOs to be used, define them here.
+
+menuconfig IG_DEVICE_GPIO_MISC
+	bool "misc"
+	default y

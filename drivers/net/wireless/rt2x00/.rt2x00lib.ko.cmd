@@ -1,0 +1,1 @@
+cmd_drivers/net/wireless/rt2x00/rt2x00lib.ko := /home/adam/android/android-ndk-r5b/toolchains/arm-eabi-4.4.0/prebuilt/linux-x86/bin/arm-eabi-ld -EL -r  -T /home/adam/Downloads/android-linux-2.6.32.9-union-release/scripts/module-common.lds --build-id -o drivers/net/wireless/rt2x00/rt2x00lib.ko drivers/net/wireless/rt2x00/rt2x00lib.o drivers/net/wireless/rt2x00/rt2x00lib.mod.o

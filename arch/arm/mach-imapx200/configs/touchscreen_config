@@ -1,0 +1,139 @@
+# touchscreen
+
+menuconfig IG_DEVICE_TOUCHSCREEN
+	bool "enable touchscreen module"
+	default y
+
+# select settings
+
+if IG_DEVICE_TOUCHSCREEN
+	
+# uc6511, first imported by sawee, peter
+config TP_UC6511
+	bool "uc6511"
+config TP_UC6511_POWER
+	string "uc6511 vcc"
+	depends on TP_UC6511
+config TP_UC6511_INT
+	string "uc6511 interrupt"
+	depends on TP_UC6511
+config TP_UC6511_RESET
+	string "uc6511 reset"
+	depends on TP_UC6511
+config TP_UC6511_I2C
+	int "uc6511 i2c channel(0 or 1)"
+	depends on TP_UC6511
+
+# uoc6150, first imported by ?, sunwei
+config TP_UOR6150
+	bool "uor6150"
+config TP_UOR6150_INT
+	string "uc6510 interrupt"
+	depends on TP_UOR6150
+config TP_UOR6150_I2C
+	int "uc6510 i2c channel(0 or 1)"
+	depends on TP_UOR6150
+
+# uoc6153, first imported by msd, warits
+config TP_UOR6153
+	bool "uor6153(verf)"
+config TP_UOR6153_INT
+	string "uc6513 interrupt"
+	depends on TP_UOR6153
+config TP_UOR6153_I2C
+	int "uc6513 i2c channel(0 or 1)"
+	depends on TP_UOR6153
+
+# sx8651, first imported by jbs, jay
+config TP_SX8651
+	bool "sx8651"
+config TP_SX8651_POWER
+	string "sx8651 vcc"
+	depends on TP_SX8651
+config TP_SX8651_INT
+	string "sx8651 interrupt"
+	depends on TP_SX8651
+config TP_SX8651_RESET
+	string "sx8651 reset"
+	depends on TP_SX8651
+config TP_SX8651_I2C
+	int "sx8651 i2c channel(0 or 1)"
+	depends on TP_SX8651
+
+# ite7260, first imported by jbs, warits
+config TP_ITE7260
+	bool "ite7260(verf)"
+config TP_ITE7260_POWER
+	string "ite7260 vcc"
+	depends on TP_ITE7260
+config TP_ITE7260_INT
+	string "ite7260 interrupt"
+	depends on TP_ITE7260
+config TP_ITE7260_RESET
+	string "ite7260 reset"
+	depends on TP_ITE7260
+config TP_ITE7260_I2C
+	int "ite7260 i2c channel(0 or 1)"
+	depends on TP_ITE7260
+
+
+# egl7200, first imported by jbs, warits
+config TP_EGL7200
+	bool "egl7200(verf)"
+config TP_EGL7200_POWER
+	string "egl7200 vcc"
+	depends on TP_EGL7200
+config TP_EGL7200_INT
+	string "egl7200 interrupt"
+	depends on TP_EGL7200
+config TP_EGL7200_RESET
+	string "egl7200 reset"
+	depends on TP_EGL7200
+config TP_EGL7200_I2C
+	int "egl7200 i2c channel(0 or 1)"
+	depends on TP_EGL7200
+
+# msg2032, NULL
+config CTP_MSG2032
+	bool "msg2032"
+config CTP_MSG2032_INT
+	string "msg2032 interrupt"
+	depends on CTP_MSG2032
+config CTP_MSG2032_I2C
+	int "msg2032 i2c channel(0 or 1)"
+	depends on CTP_MSG2032
+
+# ep0700m01, NULL
+config CTP_EP0700
+	bool "ep0700m01(verf)"
+config CTP_EP0700_INT
+	string "ep0700m01 interrupt"
+	depends on CTP_EP0700
+config CTP_EP0700_I2C
+	int "ep0700m01 i2c channel(0 or 1)"
+	depends on CTP_EP0700
+
+# ti2046, first imported by wwe10, john
+config TP_TI2046
+	bool "ti2046(verf)"
+config TP_TI2046_POWER
+	string
+	depends on TP_TI2046
+config TP_TI2046_INT
+	string "ti2046 interrupt"
+	depends on TP_TI2046
+config TP_TI2046_CS
+	string "ti2046 chip select"
+	depends on TP_TI2046
+config TP_TI2046_BUSY
+	string
+	depends on TP_TI2046
+config TP_TI2046_SSI
+	int "ti2046 ssim channel(0 or 1, 2)"
+	depends on TP_TI2046
+
+endif
+
+# According to camera sensors might have different gpio connections,
+# camera driver developer should make config control here.
+

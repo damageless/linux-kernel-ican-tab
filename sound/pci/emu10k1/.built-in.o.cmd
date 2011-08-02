@@ -1,0 +1,1 @@
+cmd_sound/pci/emu10k1/built-in.o :=  rm -f sound/pci/emu10k1/built-in.o; /home/adam/android/android-ndk-r5b/toolchains/arm-eabi-4.4.0/prebuilt/linux-x86/bin/arm-eabi-ar rcs sound/pci/emu10k1/built-in.o

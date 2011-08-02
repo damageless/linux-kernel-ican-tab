@@ -1,0 +1,72 @@
+# HDMI
+menuconfig IG_DEVICE_HDMI
+	bool "enable HDMI module"
+	default y
+
+# select settings
+
+if IG_DEVICE_HDMI
+
+# si9022, first imported by wwe10, alex
+config HDMI_SI9022
+	bool "si9022"
+config HDMI_SI9022_POWER
+	string "si9022 power"
+	depends on HDMI_SI9022
+config HDMI_SI9022_RESET
+	string "si9022 reset"
+	depends on HDMI_SI9022
+config HDMI_SI9022_INT
+	string "si9022 interrupt"
+	depends on HDMI_SI9022
+config HDMI_SI9022_I2C
+	int "si9022 i2c channel(0 or 1)"
+	depends on HDMI_SI9022
+config DOUBLE_DISPLAY_MODE
+	bool "HDMI DOUBLE_DISPLAY_MODE Support"
+	depends on HDMI_SI9022
+	default y
+config PANAUISION_MODE
+	bool "HDMI PANAUISION_MODE Support"
+	depends on HDMI_SI9022
+	default y
+config UI_MAP_COLOR
+	bool "map system & hwcursor osd layer using video mode if needed"
+	depends on VIDEO_MODE
+	default n
+
+# ep932, first imported by wwe10, alex
+config HDMI_EP932
+	bool "ep932"
+config HDMI_EP932_POWER
+	string "ep932 power"
+	depends on HDMI_EP932
+config HDMI_EP932_RESET
+	string "ep932 reset"
+	depends on HDMI_EP932
+config HDMI_EP932_INT
+	string "ep932 interrupt"
+	depends on HDMI_EP932
+config HDMI_EP932_I2C
+	int "ep932 i2c channel(0 or 1)"
+	depends on HDMI_EP932
+config HDMI_EP932_SOCKET_I2C
+	int "ep932 socket i2c channel(0 or 1)"
+	depends on HDMI_EP932
+config DOUBLE_DISPLAY_MODE
+	bool "HDMI DOUBLE_DISPLAY_MODE Support"
+	depends on HDMI_EP932 
+	default y
+config PANAUISION_MODE
+	bool "HDMI PANAUISION_MODE Support"
+	depends on HDMI_EP932 
+	default y
+config UI_MAP_COLOR
+	bool "map system & hwcursor osd layer using video mode if needed"
+	depends on VIDEO_MODE
+	default n
+
+endif
+# According to camera sensors might have different gpio connections,
+# camera driver developer should make config control here.
+

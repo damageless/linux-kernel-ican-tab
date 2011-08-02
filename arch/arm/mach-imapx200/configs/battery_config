@@ -1,0 +1,157 @@
+# battery adc
+menuconfig IG_DEVICE_BATTADC
+	bool "enable battery ADC module"
+	default y
+
+if IG_DEVICE_BATTADC
+
+comment "select ADC chip"
+# external provider
+config BATT_EXTERNAL
+	bool "external provider"
+	help
+	  If you use other IC, such as ti2046 or sx8651, to check battery value,
+	  say Y here. If not, say N.
+
+# TLV0832
+config BATT_TLV0832
+	bool "tlv0832"
+	depends on !BATT_EXTERNAL
+	help
+	  If you use tlv0832 to check battery value,
+	  say Y here. If not, say N.
+
+# BATT_TI2046
+config BATT_TI2046
+	bool "ti2046"
+	depends on !TP_TI2046 && !BATT_EXTERNAL
+	help
+	  If you use ti2046 just for battery checking, not for touchscreen,
+	  say Y here. If not, say N.
+config TP_TI2046_CS
+        string "ti2046 chip select"
+        depends on BATT_TI2046
+config TP_TI2046_SSI
+        int "ti2046 ssim channel(0 or 1, 2)"
+        depends on BATT_TI2046
+choice
+depends on BATT_TI2046
+prompt "ti2046 battery channel"
+config TP_TI2046_VBAT
+	bool "vbat"
+config TP_TI2046_AUX
+	bool "aux"
+endchoice
+
+# BATT_SX8651
+config BATT_SX8651
+	bool "sx8651"
+	depends on !TP_SX8651 && !BATT_EXTERNAL
+	help
+	  If you use sx8651 just for battery checking, not for touchscreen,
+	  say Y here. If not, say N.
+config TP_SX8651_I2C
+	int "sx8651 i2c channel(0 or 1)"
+	depends on BATT_SX8651
+
+# BATT_SZ7146
+config BATT_SZ7146
+	bool "sz7146"
+	depends on !BATT_EXTERNAL
+	help
+	  If you use sz7146 just for battery checking, not for touchscreen,
+	  say Y here. If not, say N.
+
+comment "set common parameters"
+config BATT_DEBUG
+	bool "kernel debug message"
+	default n
+	depends on IG_DEVICE_BATTADC
+	select PRINTK_TIME
+
+config BATT_CHARGE_FULL
+	string "charging full indicator"
+	depends on IG_DEVICE_BATTADC
+
+config BATT_ADAPTER_IN
+	string "adapter in/out check"
+	depends on IG_DEVICE_BATTADC
+
+menuconfig BATT_REGION_SET
+	bool "set batt value region"
+	default n
+	help
+	  If you want to set the region of battery value manually,
+	  say Y here. If not ,say N.
+
+config BATT_LEV0
+	int "battery lev0"
+	depends on BATT_REGION_SET
+config BATT_LEV10
+	int "battery lev10"
+	depends on BATT_REGION_SET
+config BATT_LEV20
+	int "battery lev20"
+	depends on BATT_REGION_SET
+config BATT_LEV30
+	int "battery lev30"
+	depends on BATT_REGION_SET
+config BATT_LEV40
+	int "battery lev40"
+	depends on BATT_REGION_SET
+config BATT_LEV50
+	int "battery lev50"
+	depends on BATT_REGION_SET
+config BATT_LEV60
+	int "battery lev60"
+	depends on BATT_REGION_SET
+config BATT_LEV70
+	int "battery lev70"
+	depends on BATT_REGION_SET
+config BATT_LEV80
+	int "battery lev80"
+	depends on BATT_REGION_SET
+config BATT_LEV90
+	int "battery lev90"
+	depends on BATT_REGION_SET
+config BATT_LEV100
+	int "battery lev100"
+	depends on BATT_REGION_SET
+config BATT_CHG_LEV0
+	int "battery charging lev0"
+	depends on BATT_REGION_SET
+config BATT_CHG_LEV10
+	int "battery charging lev10"
+	depends on BATT_REGION_SET
+config BATT_CHG_LEV20
+	int "battery charging lev20"
+	depends on BATT_REGION_SET
+config BATT_CHG_LEV30
+	int "battery charging lev30"
+	depends on BATT_REGION_SET
+config BATT_CHG_LEV40
+	int "battery charging lev40"
+	depends on BATT_REGION_SET
+config BATT_CHG_LEV50
+	int "battery charging lev50"
+	depends on BATT_REGION_SET
+config BATT_CHG_LEV60
+	int "battery charging lev60"
+	depends on BATT_REGION_SET
+config BATT_CHG_LEV70
+	int "battery charging lev70"
+	depends on BATT_REGION_SET
+config BATT_CHG_LEV80
+	int "battery charging lev80"
+	depends on BATT_REGION_SET
+config BATT_CHG_LEV90
+	int "battery charging lev90"
+	depends on BATT_REGION_SET
+config BATT_CHG_LEV100
+	int "battery charging lev100"
+	depends on BATT_REGION_SET
+
+endif
+# According to camera sensors might have different gpio connections,
+# camera driver developer should make config control here.
+

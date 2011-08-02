@@ -1,0 +1,4 @@
+kernel/drivers/scsi/scsi_wait_scan.ko
+kernel/drivers/net/wireless/rt2x00/rt2x00lib.ko
+kernel/drivers/net/wireless/rt2x00/rt2x00usb.ko
+kernel/drivers/net/wireless/rt2x00/rt73usb.ko

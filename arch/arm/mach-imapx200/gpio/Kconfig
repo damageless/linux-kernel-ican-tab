@@ -1,0 +1,66 @@
+#
+# Kconfig.
+#
+# Copyright (c) 2009~2014 ShangHai Infotm Ltd all rights reserved.
+#
+# GPIO system compile configurations.
+#
+# Sololz<sololz.luo@gmail.com>.
+#
+
+menuconfig IMAPX_GPIO_SYSTEM
+	bool "IMAPX GPIO process and configuration system support"
+	default y
+	select IG_DEVICE_GPIO_CONFIG
+	---help---
+	Make life easier, please choose me.
+
+if IMAPX_GPIO_SYSTEM
+
+config IG_PANIC_ENABLE
+	bool "Enable panic mechanism or just print error message"
+	default n
+	---help---
+	If it is enabled, gpio base process system might panic to protect
+	kernel from error operations. If not, just print error messages.
+
+config IG_DEBUG_ENABLE
+	bool "Enable debug message print of GPIO driver"
+	default n
+	---help---
+	Print debug message of each API operation status and objects.
+
+source "arch/arm/mach-imapx200/gpio/base/Kconfig"
+
+menuconfig IG_DEVICE_GPIO_CONFIG
+	bool "Config all GPIO of relate devices"
+	default y
+	select IG_DEVICE_GPIO_MISC
+
+if IG_DEVICE_GPIO_CONFIG
+
+# Modules GPIO definitions.
+# source "arch/arm/mach-imapx200/gpio/configs/misc_Kconfig"
+
+# power
+source "arch/arm/mach-imapx200/gpio/configs/power_config"
+# LCD
+source "arch/arm/mach-imapx200/gpio/configs/lcd_config"
+# touch screen
+source "arch/arm/mach-imapx200/gpio/configs/touchscreen_config"
+# hdmi
+source "arch/arm/mach-imapx200/gpio/configs/hdmi_config"
+# camera
+source "arch/arm/mach-imapx200/gpio/configs/camif0_config"
+source "arch/arm/mach-imapx200/gpio/configs/camif1_config"
+# codec
+source "arch/arm/mach-imapx200/gpio/configs/codec_config"
+# battery
+source "arch/arm/mach-imapx200/gpio/configs/battery_config"
+# accelarometers
+source "arch/arm/mach-imapx200/gpio/configs/acc_config"
+# TODO: more devices/gpios tobe added.
+
+endif	# IG_DEVICE_GPIO_CONFIG
+
+endif

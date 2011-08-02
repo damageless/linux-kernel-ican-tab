@@ -1,0 +1,63 @@
+# keyboard
+menuconfig IG_DEVICE_KEYBOARD
+	bool "enable keyboard module"
+	default y
+
+
+if IG_DEVICE_KEYBOARD
+
+choice
+depends on IG_DEVICE_KEYBOARD
+prompt "select keyboard_language"
+config INPUT_KEYBOARD_AMERICA
+	bool "KEYBOARD_AMERICA"
+	---help---
+	TBA
+
+config INPUT_KEYBOARD_SPANISH
+	bool "KEYBOARD_SPANISH"
+	---help---
+	TBA
+
+config INPUT_KEYBOARD_JAPANESE
+	bool "KEYBOARD_JAPANESE"
+	---help---
+	TBA
+
+config INPUT_KEYBOARD_ITALY
+	bool "KEYBOARD_ITALY"
+	---help---
+	TBA
+endchoice
+
+# usb keyboard
+config KEYBOARD_USB
+	bool
+	default y
+	help
+	  TBA
+
+# ps2 keyboard
+config KEYBOARD_PS2
+	bool
+	help
+	  TBA
+
+# matrix keyboard
+config KEYBOARD_MATRIX
+	bool "matrix keyboard"
+	help
+	  TBA
+config KEYBOARD_MATRIX_CS
+	string "matrix keyboard select"
+	depends on KEYBOARD_MATRIX
+
+config KEYBOARD_LED_CAPS
+	string "capslock led control"
+	depends on KEYBOARD_MATRIX
+
+config KEYBOARD_LED_NUML
+	string "numlock led control"
+	depends on KEYBOARD_MATRIX
+
+endif

@@ -1,0 +1,64 @@
+# Camera
+
+menuconfig IG_DEVICE_CAMERA0
+	bool "enable camif(0), the front one"
+	default y
+	select IMAP_CAMIF
+
+# select settings
+
+if IG_DEVICE_CAMERA0
+
+# camera global powers
+config IG_CAMIF0_SUPPLY
+	string "camif power supply"
+	default "N"
+config IG_CAMIF0_PND
+	string "camif power down"
+	default "N"
+config IG_CAMIF0_CS
+	string "camif chip select"
+	default "N"
+config IG_CAMIF0_I2C
+	int "camif i2c channel(0 or 1)"
+	default 0
+config IG_CAMIF0_MIRR
+	bool "mirrored image"
+	default n
+config IG_CAMIF0_FLIP
+	bool "flipped image"
+	default n
+
+
+config IG_CAM_DETECT
+	bool "detect multi cameras"
+	default n
+
+choice
+depends on IG_CAM_DETECT
+prompt "detect method"
+config IG_CAM_CMOS_ID
+	bool "cmos id"
+config IG_CAM_HWID
+	bool "hardware id"
+endchoice
+
+comment "select camera modules"
+config IG_CAM_OV2655_XYC
+	bool "xyc: ov2655"
+	default n
+config IG_CAM_GT2005_XYC
+	bool "xyc: gt2005"
+	default n
+config IG_CAM_OV2655_ZC
+	bool "zc: ov2655"
+	default n
+config IG_CAM_HY252_XX
+	bool "xx: hy252"
+	default n
+
+endif
+
+# According to camera sensors might have different gpio connections,
+# camera driver developer should make config control here.
+

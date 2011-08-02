@@ -1,0 +1,193 @@
+# power
+
+menuconfig IG_DEVICE_POWER
+	bool "global power settings"
+	default y
+
+if IG_DEVICE_POWER
+
+# otg global powers
+config IG_OTG_POWERS
+	bool "otg pins"
+	depends on IG_DEVICE_POWER 
+
+choice
+prompt "OTG port config"
+depends on IG_OTG_POWERS
+config IG_OTG_HOST
+	bool "use as host"
+config IG_OTG_SLAVE
+	bool "use as slave"
+	select IG_ENABLE_GADGET
+config IG_OTG_AUTO
+	bool "automatic"
+	select IG_ENABLE_GADGET
+endchoice
+
+config IG_ENABLE_GADGET
+	bool
+	select USB_GADGET
+	select USB_GADGET_IMAPX200
+	select USB_ANDROID
+	select USB_ANDROID_ADB
+	select USB_ANDROID_MASS_STORAGE
+
+config IG_OTG_ID
+	string "otg id pin"
+	depends on IG_OTG_POWERS && IG_OTG_AUTO
+	default "N"
+config IG_OTG_VBUS
+	string "otg vbus"
+	depends on IG_OTG_POWERS && IG_OTG_AUTO
+	default "N"
+
+# audio global powers
+config IG_AUDIO_POWERS
+	bool "codec pins"
+	depends on IG_DEVICE_POWER 
+config IG_AUDIO_SPKEN
+	string "louderspeaker enable"
+	depends on IG_AUDIO_POWERS
+	default "N"
+config IG_AUDIO_HPIN
+	string "head phone in"
+	depends on IG_AUDIO_POWERS
+	default "N"
+
+# wi-fi global powers
+config IG_WIFI_POWERS
+	bool "wifi power pins"
+	depends on IG_DEVICE_POWER 
+config IG_WIFI_POWER0
+	string "wi-fi power0"
+	depends on IG_WIFI_POWERS
+	default "N"
+config IG_WIFI_POWER1
+	string "wi-fi power1"
+	depends on IG_WIFI_POWERS
+	default "N"
+config IG_WIFI_SDIO
+	bool "this is an SDIO wifi"
+	depends on IG_WIFI_POWERS
+	default n
+	help
+	  choose this if this is an SDIO wifi.
+config IG_WIFI_SDIO_CHANNEL
+	int "SDIO channel(0, 1 or 2)"
+	depends on IG_WIFI_SDIO
+	default 0
+
+# ethernet global powers
+config IG_ETH_POWERS
+	bool "ethernet power pins"
+	depends on IG_DEVICE_POWER 
+config IG_ETH_ENABLE
+	string "ethernet power enable"
+	depends on IG_ETH_POWERS
+	default "N"
+config IG_ETH_RESET
+	string "ethernet reset"
+	depends on IG_ETH_POWERS
+	default "N"
+
+# gps powers
+config IG_GPS_POWERS
+	bool "gps power pins"
+	depends on IG_DEVICE_POWER 
+	select IX_DSP_GPS
+config IG_GPS_ENABLE
+	string "gps RF module enable"
+	depends on IG_GPS_POWERS
+	default "N"
+
+# motor powers
+config IG_MOTOR_POWERS
+	bool "motor pins"
+	depends on IG_DEVICE_POWER 
+	select ANDROID_TIMED_GPIO
+config IG_MOTOR_ENABLE
+	string "motor enable"
+	depends on IG_MOTOR_POWERS
+	default "N"
+
+# power emu
+config IG_POWER_KEY_EMU
+	int "power key emulation"
+	depends on IG_DEVICE_POWER
+	default 116
+	help
+	  press PowerKey to emulate other keys. If your emulate
+	  another key, the sleep event will not be reported.
+	  Here input your key code value. Refer to include/
+	  linux/input.h for more informations. If unsure, say 116.
+	  The following is a simple list:
+	  menu -- 139
+	  back -- 158
+	  home -- 102
+	  search -- 217
+	  power -- 116
+
+# keys
+config IG_KEYS_POWERS
+	bool "gpio keys"
+	depends on IG_DEVICE_POWER 
+config IG_KEYS_MENU
+	string "menu"
+	depends on IG_KEYS_POWERS
+	default "N"
+config IG_KEYS_BACK
+	string "back"
+	depends on IG_KEYS_POWERS
+	default "N"
+config IG_KEYS_HOME
+	string "home"
+	depends on IG_KEYS_POWERS
+	default "N"
+config IG_KEYS_SEARCH
+	string "search"
+	depends on IG_KEYS_POWERS
+	default "N"
+config IG_KEYS_VOLUP
+	string "volume up"
+	depends on IG_KEYS_POWERS
+	default "N"
+config IG_KEYS_VOLDOWN
+	string "volume down"
+	depends on IG_KEYS_POWERS
+	default "N"
+config IG_KEYS_WIFI
+	string "wifi switch"
+	depends on IG_KEYS_POWERS
+	default "N"
+config IG_KEYS_SENSOR
+	string "sensor switch"
+	depends on IG_KEYS_POWERS
+	default "N"
+
+# leds
+config IG_KEYS_LEDS
+	bool "LEDs"
+	depends on IG_DEVICE_POWER 
+	default "N"
+config IG_KEYS_LED0
+	string "led0"
+	depends on IG_KEYS_LEDS
+	default "N"
+config IG_KEYS_LED1
+	string "led1"
+	depends on IG_KEYS_LEDS
+	default "N"
+config IG_KEYS_LED2
+	string "led2"
+	depends on IG_KEYS_LEDS
+	default "N"
+config IG_KEYS_LED3
+	string "led3"
+	depends on IG_KEYS_LEDS
+	default "N"
+
+
+endif
+# According to camera sensors might have different gpio connections,
+# camera driver developer should make config control here.
+

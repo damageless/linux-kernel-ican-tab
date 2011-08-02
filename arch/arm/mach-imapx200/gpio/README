@@ -1,0 +1,25 @@
+# README
+
+########################### HOW TO INSTALL THIS PACK TO YOUR KERNEL ############################
+1. Copy head file "./head/imapx_gpio_api.h" to $(KERN_SRC)/arch/arm/mach-imapx200/include/mach.
+
+2. Copy "gpio" directory to $(KERN_SRC)/arch/arm/mach-imapx200, and add makefile link
+to $(KERN_SRC)/arm/arm/mach-imapx200/Makefile, as follows:
+
+# obj-y += gpio/
+
+3. Add Kconfig source include to kernel menuconfig, as follows:
+
+file: "$(KERN_SRC)/arch/arm/Kconfig"
+
+# if MACH_IMAPX200
+# source "arch/arm/mach-imapx200/gpio/Kconfig"
+# endif
+
+###################### HOW TO ADD A NEW DEVICE SUPPORT IN GPIO DRIVER #########################
+1. Add Kconfig, if a new device is added, driver developer should add a new Kconfig in 
+$(KERN_SRC)/arch/arm/mach-imapx200/gpio/configs, "sample_Kconfig"/"misk_Kconfig" as reference.
+
+2. Make menuconfig to choose device gpio support.
+
+3. Do as you will, grand mother fuckers@@.

@@ -1,0 +1,1 @@
+cmd_drivers/memalloc/built-in.o :=  /home/adam/android/android-ndk-r5b/toolchains/arm-eabi-4.4.0/prebuilt/linux-x86/bin/arm-eabi-ld -EL    -r -o drivers/memalloc/built-in.o drivers/memalloc/memalloc.bin drivers/memalloc/shm_so.bin drivers/memalloc/mp_mem.bin drivers/memalloc/mmalcr.bin 

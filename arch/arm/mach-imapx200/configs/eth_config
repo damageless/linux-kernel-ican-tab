@@ -1,0 +1,8 @@
+# Camera.
+menuconfig IG_DEVICE_CAMERA_CONFIG
+	bool "Camera"
+	default y
+
+# According to camera sensors might have different gpio connections,
+# camera driver developer should make config control here.
+

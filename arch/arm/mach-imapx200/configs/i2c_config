@@ -1,0 +1,26 @@
+# i2c
+
+menuconfig IG_I2C_ALT
+	bool "use an alternate i2c driver"
+	default n
+	help
+	  the i2c drivers is in drivers/i2c/busses/i2cs, choose another
+	  if the current do not work :(
+
+# select settings
+
+if IG_I2C_ALT
+
+config IG_I2C_ALT_PATH
+	string "driver path"
+	default "union"
+	help
+	  the i2c drivers is in drivers/i2c/busses/i2cs, choose another
+	  if the current do not work :(
+	
+
+endif
+
+# According to camera sensors might have different gpio connections,
+# camera driver developer should make config control here.
+

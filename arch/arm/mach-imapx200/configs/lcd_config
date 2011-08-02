@@ -1,0 +1,95 @@
+# LCD
+
+menuconfig IG_DEVICE_LCD
+	bool "enable LCD module"
+	default y
+
+# select settings
+
+if IG_DEVICE_LCD
+	
+# lcd global powers
+config IG_LCD_POWERS
+	bool "lcd power pins"
+config IG_LCD_33
+	string "lcd v33"
+	depends on IG_LCD_POWERS
+config IG_LCD_AVDD
+	string "lcd avdd"
+	depends on IG_LCD_POWERS
+config IG_LCD_VGH
+	string "lcd vgh"
+	depends on IG_LCD_POWERS
+config IG_LCD_VGL
+	string "lcd vgl"
+	depends on IG_LCD_POWERS
+config IG_LCD_BACKLIGHT
+	string "lcd backlight"
+	depends on IG_LCD_POWERS
+
+# lcd edid
+config IG_LCD_EDID
+	bool "lcd edid support"
+	default n
+config IG_LCD_EDID_I2C
+	int "lcd i2c channel(0 or 1)"
+	depends on IG_LCD_EDID
+	default 0
+
+# modules
+comment "select an LCD module"
+config LCD_HSD070IDW1
+	bool "800x480 - HSD070IDW1"
+	select IG_LCDRES_800x480
+config LCD_9127050000a
+	bool "800x480 - 9127050000a(qunchang)"
+	select IG_LCDRES_800x480
+config LCD_FLD0800R06A
+	bool "800x480 - FLD0800R06A"
+	select IG_LCDRES_800x480
+config LCD_HSD070ISN1
+	bool "800x600 - HSD070ISN1"
+	select IG_LCDRES_800x600
+config LCD_LC070MA21BW
+	bool "800x600 - LC070MA21BW"
+	select IG_LCDRES_800x600
+config LCD_JW08009_70135
+	bool "800x600 - JW08009-70135"
+	select IG_LCDRES_800x600
+config LCD_MD101-004TDAN
+	bool "1024x576 - MD101-004TDAN"
+	select IG_LCDRES_1024x576
+config LCD_AT102TN42
+	bool "1024x600 - AT102TN42"
+	select IG_LCDRES_1024x600
+config LCD_HSD100PXN1
+	bool "1024x768 - HSD100PXN1"
+	select IG_LCDRES_1024x768
+
+# backlight
+comment "adjust the backlight parameters"
+config IG_BL_PWM_PRE
+	int "pwm prescaler divide value(0 ~ 255)"
+	default 0
+	help
+	  PWM frequence will be PCLK / ((prescaler+1) * MUX).
+config IG_BL_PWM_MUX
+	int "pwm MUX divide value(0 ~ 3)"
+	default 0
+	help
+	  PWM frequence will be PCLK / ((prescaler+1) * MUX).
+config IG_BL_DIV
+	int "TCNTB value of pwm timer"
+	default 767
+config IG_BL_BEGIN
+	int "Minimum TCMPB value of pwm timer(dark)"
+	default 32
+config IG_BL_END
+	int "Maximal TCMPB value of pwm timer(bright)"
+	default 767
+
+endif
+
+# According to camera sensors might have different gpio connections,
+# camera driver developer should make config control here.
+

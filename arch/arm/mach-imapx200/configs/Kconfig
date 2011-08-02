@@ -1,0 +1,53 @@
+#
+# Kconfig.
+#
+# Copyright (c) 2009~2014 ShangHai Infotm Ltd all rights reserved.
+#
+# GPIO system compile configurations.
+#
+# Sololz<sololz.luo@gmail.com>.
+#
+
+config IG_BRAND_MARK
+bool "-"
+default n
+
+menu "Board setup"
+
+config IG_BOARD_STRING
+	string "board identity string"
+	default "baseboard:board"
+	help
+	  Input your board name string here. For example, if your
+	  board is p0106ra which is based on infotm wwe10. You
+	  input "wwe10:p0106ra".
+
+# Modules GPIO definitions.
+# source "arch/arm/mach-imapx200/gpio/configs/misc_Kconfig"
+
+# power
+source "arch/arm/mach-imapx200/configs/power_config"
+# LCD
+source "arch/arm/mach-imapx200/configs/lcd_config"
+# touch screen
+source "arch/arm/mach-imapx200/configs/touchscreen_config"
+# hdmi
+source "arch/arm/mach-imapx200/configs/hdmi_config"
+# camera
+source "arch/arm/mach-imapx200/configs/camif0_config"
+source "arch/arm/mach-imapx200/configs/camif1_config"
+# codec
+source "arch/arm/mach-imapx200/configs/codec_config"
+# battery
+source "arch/arm/mach-imapx200/configs/battery_config"
+# accelarometers
+source "arch/arm/mach-imapx200/configs/acc_config"
+# keyboard
+source "arch/arm/mach-imapx200/configs/keyboard_config"
+# logo
+source "arch/arm/mach-imapx200/configs/logo_config"
+# i2c
+source "arch/arm/mach-imapx200/configs/i2c_config"
+# TODO: more devices/gpios tobe added.
+
+endmenu

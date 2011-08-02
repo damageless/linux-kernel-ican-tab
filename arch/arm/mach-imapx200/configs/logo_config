@@ -1,0 +1,89 @@
+# i2c
+
+menuconfig IG_OEM_LOGO
+	bool "enable kernel logo"
+	default n
+
+
+# select settings
+
+if IG_OEM_LOGO
+
+choice
+prompt "choose logo"
+config IG_LOGO_DEFAULT
+	bool "default litte fat pungin"
+	select LOGO_LINUX_CLUT224
+config IG_LOGO_ALT
+	bool "use an alternate OEM logo"
+	help
+	  We use imagemagick tools to generate an OEM logo.
+	  Install the imagemagick pakage before you choose this option.
+	  You can use the following command line to get this software:
+	   $ sudo apt-get install imagemagick
+	  
+	  When this tool is ready, you can compile any picture as
+	  your kernel logo. Simply put your picture into
+	  drivers/video/infotm/logos/. and complete the path. This
+	  is an easy way to create logo. You need not mind the format
+	  of the picture. You also need not mind the size of the
+	  picture, even if it is larger than your LCD screen.
+
+	  Try it! Good luck :)
+endchoice
+
+config IG_LOGO_PATH
+	string "choose a picture"
+	depends on IG_LOGO_ALT
+	default "bird.jpg"
+	help
+	  Input the picture name here. If you want to add a new picture,
+	  you must put it to drivers/video/infotm/logos/.
+
+endif
+
+
+
+
+
+
+
+# LCD RES BASE
+
+config IG_LCDRES_320x240
+	bool
+	default n
+config IG_LCDRES_640x480
+	bool
+	default n
+config IG_LCDRES_800x480
+	bool
+	default n
+config IG_LCDRES_800x600
+	bool
+	default n
+config IG_LCDRES_1024x576
+	bool
+	default n
+config IG_LCDRES_1024x600
+	bool
+	default n
+config IG_LCDRES_1024x768
+	bool
+	default n
+config IG_LCDRES_1280x768
+	bool
+	default n
+config IG_LCDRES_1440x900
+	bool
+	default n
+config IG_LCDRES_1680x1050
+	bool
+	default n
+config IG_LCDRES_1920x1080
+	bool
+	default n
+
+# According to camera sensors might have different gpio connections,
+# camera driver developer should make config control here.
+

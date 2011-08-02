@@ -1,0 +1,136 @@
+# arch/arm/plat-imap/Kconfig
+#
+# Copyright (c) 2009~2014 ShangHai Infotm Ltd all rights reserved.
+#
+# Licensed under GPLv2
+
+config PLAT_IMAP
+	bool
+	depends on ARCH_IMAP
+	default y if ARCH_IMAP
+	select NO_IOPORT
+	select ARCH_REQUIRE_GPIOLIB
+	help
+	  Base platform code for any Infotm IMAP device
+
+if PLAT_IMAP
+
+config PLAT_IMAPX200
+	bool "IMAPX200 Platform support"
+	depends on ARCH_IMAP
+	default y if CPU_IMAPX200
+	help
+	  Support for Infotm IMAPX200 CPU based systems.
+
+config PANIC_DUMP
+	bool "Support for production panic dump"
+	depends on PLAT_IMAP
+	default n
+
+config FBCON_DRAW_PANIC_TEXT
+	bool "Support for production panic text"
+	depends on PLAT_IMAP
+	default n
+
+config IMAPX200_PWM
+	bool "PWM device support"
+	default y if CPU_IMAPX200
+	select HAVE_PWM
+	help
+	  Support for exporting the PWM timer blocks via the pwm device
+	  system.
+
+config IMAPX200_DMA
+	bool "IMAPX200 DMA support"
+	depends on ARCH_IMAP
+	help
+	  IMAPX200 DMA support. This is needed for drivers like sound which
+	  use the DMA system to move data to and from the peripheral blocks.
+
+config IMAPX200_DMA_DEBUG
+	bool "IMAPX200 DMA support debug"
+	depends on ARCH_IMAP && IMAPX200_DMA
+	help
+	  Enable debugging output for the DMA code. This option sends info
+	  to the kernel log, at priority KERN_DEBUG.
+
+config IMAP_LOWLEVEL_UART_PORT
+	int "IMAP UART to use for low-level messages"
+	depends on PLAT_IMAP
+	default 0
+	help
+	  Choice of which UART port to use for the low-level messages,
+	  such as the `Uncompressing...` at start time. The value of
+	  this configuration should be between zero and two. The port
+	  must have been initialised by the boot-loader before use.
+
+config	FAKE_PM 
+	bool "Support for fake power manage"
+	depends on PLAT_IMAP 
+	default n
+
+config PM_SHUT_DOWN
+	bool "iMAPx200 PM shut down"
+	depends on PLAT_IMAP 
+	default n
+	help
+	  If you enable this feature, system will be wake up after a pre-
+	  configured time in suspend mode and shutdown. The shutdown is
+	  unsafe, so only enabled this if you really have a reason.
+
+config PM_SHUT_DOWN_SEC
+	int "Shut down seconds count"
+	depends on PM_SHUT_DOWN
+	default 1800
+	help
+	  System will wake up and shutdown PM_SHUT_DOWN_SEC after enter
+	  suspending mode.
+
+	  Set this value to 13 will perform a PM test, this will not shutdown
+	  the machine but only wakeup after 13 seconds.
+
+
+comment "iMAP Settings"
+
+menu "iMAP Reserved Memory"
+
+config IMAP_RESERVEMEM_SIZE_ETH
+	int "Memory Size Reserved for Ethernet (KB)"
+	depends on ARCH_IMAP && GMAC_UNIV_ETHERNET
+	default "0"
+config IMAP_RESERVEMEM_SIZE_PMEM
+	int "Memory Size Reserved for Android_pmem (KB)"
+	depends on ARCH_IMAP && ANDROID_PMEM
+	default "0"
+
+endmenu
+
+menu "iMAP GPIO API config"
+
+config IG_PANIC_ENABLE
+	bool "Enable panic mechanism or just print error message"
+	default n
+	---help---
+	If it is enabled, gpio base process system might panic to protect
+	kernel from error operations. If not, just print error messages.
+
+config IG_DEBUG_ENABLE
+	bool "Enable debug message print of GPIO driver"
+	default n
+	---help---
+	Print debug message of each API operation status and objects.
+endmenu
+
+config IMAP_FPGA
+	bool "iMAP FPGA Clock"
+	depends on ARCH_IMAP
+	default n
+	help
+	  If you are operating on the FPGA platform, say Y here!
+
+config FPGA_EXT_CLOCK
+	int "FPGA External Clock Setting"
+	depends on IMAP_FPGA
+	default "40000000"
+
+endif
